@@ -1,7 +1,7 @@
-const CACHE_NAME = 'pulse-shell-v16';
+const CACHE_NAME = 'pulse-shell-v17';
 const APP_FILES = [
   './', './index.html', './styles.css', './app.js',
-  './manifest.webmanifest', './icons/pulse-192.png', './icons/pulse-512.png'
+  './manifest.webmanifest', './icons/pulse.svg'
 ];
 
 self.addEventListener('install', event => {
