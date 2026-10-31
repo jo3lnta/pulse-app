@@ -50,7 +50,7 @@
       <div class="sidebar-bottom">
         <div class="side-label">PERSONAL</div>
         <button class="nav-link" data-page="profile"><span class="nav-icon">◎</span> Profile & settings</button>
-        <div class="privacy-card"><span class="privacy-icon">⌑</span><div><strong>Your data stays yours</strong><p>This prototype saves entries in this browser only.</p></div></div>
+        <div class="privacy-card"><span class="privacy-icon">⌑</span><div><strong>Your data stays yours</strong><p>Your records are saved on this device and synced to your private PULSE account.</p></div></div>
         <div class="user-mini"><div class="avatar" id="accountInitial">P</div><div><strong id="accountEmail">PULSE account</strong><span id="syncStatus">CLOUD SYNC</span><span id="accountRole" class="account-role" hidden>MEMBER</span></div><button class="logout-button" id="logoutButton" type="button" title="Sign out">↗</button></div>
       </div>
     </aside>
@@ -112,7 +112,7 @@
         <div class="page-intro"><div class="eyebrow">PULSE CONTROL CENTER</div><h1>Administration<span class="green">.</span></h1><p class="muted">Account access and platform activity. Personal health measurements are not shown here.</p></div>
         <div class="admin-stats-grid">
           <article class="metric-card"><div class="metric-top"><span>TOTAL ACCOUNTS</span><span class="metric-symbol green">◎</span></div><div class="metric-value" id="adminTotalUsers">—</div><div class="metric-foot">Created PULSE accounts</div></article>
-          <article class="metric-card"><div class="metric-top"><span>ACTIVE ACCESS</span><span class="metric-symbol green">●</span></div><div class="metric-value" id="adminActiveUsers">—</div><div class="metric-foot">Accounts able to sign in</div></article>
+          <article class="metric-card"><div class="metric-top"><span>UNBLOCKED ACCOUNTS</span><span class="metric-symbol green">●</span></div><div class="metric-value" id="adminActiveUsers">—</div><div class="metric-foot">Accounts not currently blocked</div></article>
           <article class="metric-card"><div class="metric-top"><span>BLOCKED</span><span class="metric-symbol pink">⊘</span></div><div class="metric-value" id="adminBlockedUsers">—</div><div class="metric-foot">Access temporarily disabled</div></article>
           <article class="metric-card"><div class="metric-top"><span>RECORD COUNT</span><span class="metric-symbol blue">▤</span></div><div class="metric-value" id="adminTotalEntries">—</div><div class="metric-foot">Count only, no health values</div></article>
         </div>
@@ -134,7 +134,7 @@
 
       <section class="page" id="page-profile">
         <div class="page-intro"><div class="eyebrow">YOUR SPACE</div><h1>Profile<span class="green">.</span></h1><p class="muted">Preferences, privacy and app information.</p></div>
-        <article class="panel settings-panel"><div class="settings-row"><div class="settings-icon">◎</div><div><strong>Personal dashboard</strong><p>Your entries are stored in this browser on this device.</p></div></div><div class="settings-row"><div class="settings-icon">⌑</div><div><strong>Privacy first</strong><p>This prototype does not send your health entries to a server.</p></div></div><div class="settings-row"><div class="settings-icon">♥</div><div><strong>Health data connection</strong><p>Automatic Apple Health integration is not available in this Windows web prototype.</p></div></div><div class="settings-row"><div class="settings-icon">ⓘ</div><div><strong>About PULSE</strong><p>Independent wellness tracker prototype. Not a medical device.</p></div></div><button class="danger-button" id="clearData">Clear all my entries</button></article>
+        <article class="panel settings-panel"><div class="settings-row"><div class="settings-icon">◎</div><div><strong>Personal dashboard</strong><p>Your entries are stored in your PULSE account and synced across your devices.</p></div></div><div class="settings-row"><div class="settings-icon">⌑</div><div><strong>Privacy first</strong><p>Cloud sync uses account-scoped access controls. Only your account can read your measurements.</p></div></div><div class="settings-row"><div class="settings-icon">♥</div><div><strong>Health data connection</strong><p>Automatic Apple Health integration is not available in this Windows web prototype.</p></div></div><div class="settings-row"><div class="settings-icon">ⓘ</div><div><strong>About PULSE</strong><p>Independent wellness tracker prototype. Not a medical device.</p></div></div><button class="danger-button" id="clearData">Clear all my entries</button></article>
       </section>
     </main>
 
