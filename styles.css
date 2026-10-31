@@ -23,3 +23,9 @@
   .mobile-nav .nav-icon{font-size:18px;line-height:1.2;width:auto}
   .mobile-nav .nav-link.active{background:#17231d;color:var(--green)}
 }
+
+.sleep-time-fields{margin-top:8px;padding:12px;border:1px solid #2c3d33;border-radius:10px;background:#0d1511}
+.sleep-time-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sleep-time-grid label{margin:0}
+.sleep-time-fields .form-note{margin-bottom:0}
+@media(max-width:420px){.sleep-time-grid{grid-template-columns:1fr}}
