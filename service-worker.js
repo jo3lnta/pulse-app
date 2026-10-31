@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pulse-shell-v4';
+const CACHE_NAME = 'pulse-shell-v5';
 const APP_FILES = [
   './', './index.html', './styles.css', './app.js',
   './manifest.webmanifest', './icons/pulse-192.png', './icons/pulse-512.png'
