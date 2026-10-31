@@ -49,11 +49,11 @@ function sleepRegularity() {
     .sort((a, b) => a.createdAt - b.createdAt)
     .forEach(e => byDate.set(e.date, e));
   const nights = [...byDate.values()];
-  if (nights.length < 3) return { value: null, count: nights.length };
+  if (nights.length < 3) return { value: null, bedtime: null, wake: null, count: nights.length };
   const bedtimeVariation = circularDeviation(nights.map(e => e.bedtime));
   const wakeVariation = circularDeviation(nights.map(e => e.wakeTime));
   if (bedtimeVariation == null || wakeVariation == null) return { value: null, count: nights.length };
-  return { value: Math.round((bedtimeVariation + wakeVariation) / 2), count: nights.length };
+  return { value: Math.round((bedtimeVariation + wakeVariation) / 2), bedtime: Math.round(bedtimeVariation), wake: Math.round(wakeVariation), count: nights.length };
 }
 function recoveryEstimate() {
   // Experimental personal trend indicator, not a medical score or training recommendation.
@@ -226,6 +226,8 @@ function render() {
   if ($("sleep-nights")) $("sleep-nights").textContent = `${sleepWeek.length} / 7`;
   const regularity = sleepRegularity();
   if ($("sleep-regularity")) $("sleep-regularity").innerHTML = regularity.value == null ? "— <small>min</small>" : `±${regularity.value} <small>min</small>`;
+  if ($("sleep-bed-variation")) $("sleep-bed-variation").innerHTML = regularity.bedtime == null ? "— <small>min</small>" : `±${regularity.bedtime} <small>min</small>`;
+  if ($("sleep-wake-variation")) $("sleep-wake-variation").innerHTML = regularity.wake == null ? "— <small>min</small>" : `±${regularity.wake} <small>min</small>`;
   if ($("sleep-regularity-note")) $("sleep-regularity-note").textContent = regularity.value == null
     ? `Add bedtime and wake time for at least 3 nights in the last 14 days (${regularity.count}/3 so far).`
     : `Average variation from your usual bedtime and wake time, based on ${regularity.count} nights in the last 14 days.`;
