@@ -27,6 +27,34 @@ function median(values) {
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
+function clockMinutes(time) {
+  if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time || "")) return null;
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+function circularDeviation(times) {
+  const values = times.map(clockMinutes).filter(value => value != null);
+  if (values.length < 3) return null;
+  const anchor = values[0];
+  const offsets = values.map(value => ((value - anchor + 720 + 1440) % 1440) - 720);
+  const center = median(offsets);
+  return median(offsets.map(value => Math.abs(value - center)));
+}
+function sleepRegularity() {
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() - 13);
+  const cutoffISO = new Date(cutoff.getTime() - cutoff.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const byDate = new Map();
+  entries.filter(e => e.type === "sleep" && e.date >= cutoffISO && e.date <= isoToday && e.bedtime && e.wakeTime)
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .forEach(e => byDate.set(e.date, e));
+  const nights = [...byDate.values()];
+  if (nights.length < 3) return { value: null, count: nights.length };
+  const bedtimeVariation = circularDeviation(nights.map(e => e.bedtime));
+  const wakeVariation = circularDeviation(nights.map(e => e.wakeTime));
+  if (bedtimeVariation == null || wakeVariation == null) return { value: null, count: nights.length };
+  return { value: Math.round((bedtimeVariation + wakeVariation) / 2), count: nights.length };
+}
 function recoveryEstimate() {
   // Experimental personal trend only: HRV and sleep are compared with the user's own recent baseline.
   // Generic heart-rate entries are excluded because they are not identified as resting measurements.
@@ -96,13 +124,23 @@ document.querySelectorAll("[data-goto]").forEach(b => b.addEventListener("click"
 if ($("todayLabel")) $("todayLabel").textContent = today.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
 if ($("dateButton")) $("dateButton").title = today.toLocaleDateString("es-ES");
 
+function updateSleepFields() {
+  const visible = $("entryType").value === "sleep";
+  $("sleepTimeFields").hidden = !visible;
+  $("bedtime").required = false;
+  $("wakeTime").required = false;
+}
 function openLog(type = "hr") {
   $("entryType").value = type;
   $("entryDate").value = isoToday;
   $("entryValue").value = "";
+  $("bedtime").value = "";
+  $("wakeTime").value = "";
   $("formError").textContent = "";
+  updateSleepFields();
   $("logDialog").showModal();
 }
+$("entryType")?.addEventListener("change", updateSleepFields);
 $("quickLog")?.addEventListener("click", () => openLog());
 $("firstLog")?.addEventListener("click", () => openLog());
 document.querySelectorAll("[data-open-log]").forEach(b => b.addEventListener("click", () => openLog(b.dataset.openLog)));
@@ -110,12 +148,19 @@ $("cancelLog")?.addEventListener("click", () => $("logDialog").close());
 $("logForm")?.addEventListener("submit", e => {
   e.preventDefault();
   const type = $("entryType").value, value = Number($("entryValue").value), date = $("entryDate").value;
+  const bedtime = $("bedtime").value, wakeTime = $("wakeTime").value;
   const limits = { hr: [25, 240], hrv: [1, 300], sleep: [0, 24], steps: [0, 100000] };
   if (!date || !Number.isFinite(value) || value < limits[type][0] || value > limits[type][1]) {
     $("formError").textContent = "Check the value and date. Enter a real measurement, not an estimate.";
     return;
   }
-  entries.push({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), type, value, date, createdAt: Date.now() });
+  if (type === "sleep" && Boolean(bedtime) !== Boolean(wakeTime)) {
+    $("formError").textContent = "Enter both times, or leave both blank.";
+    return;
+  }
+  const entry = { id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), type, value, date, createdAt: Date.now() };
+  if (type === "sleep" && bedtime && wakeTime) { entry.bedtime = bedtime; entry.wakeTime = wakeTime; }
+  entries.push(entry);
   saveEntries();
   $("logDialog").close();
   toast("Measurement saved on this device.");
@@ -129,7 +174,8 @@ function toast(message) {
 function row(e) {
   const labels = { hr: "Heart rate", hrv: "HRV", sleep: "Sleep", steps: "Steps" };
   const units = { hr: "bpm", hrv: "ms", sleep: "h", steps: "steps" };
-  return `<div class="entry-row"><div><strong>${labels[e.type]}</strong><small>${fmtDate(e.date)}</small></div><div class="entry-value">${Number(e.value).toLocaleString("es-ES", { maximumFractionDigits: 1 })} ${units[e.type]}</div></div>`;
+  const sleepTimes = e.type === "sleep" && e.bedtime && e.wakeTime ? `<br>Bed ${e.bedtime} · Wake ${e.wakeTime}` : "";
+  return `<div class="entry-row"><div><strong>${labels[e.type]}</strong><small>${fmtDate(e.date)}${sleepTimes}</small></div><div class="entry-value">${Number(e.value).toLocaleString("es-ES", { maximumFractionDigits: 1 })} ${units[e.type]}</div></div>`;
 }
 function listInto(id, arr, emptyTitle, emptyText) {
   const el = $(id);
@@ -189,6 +235,11 @@ function render() {
   const sleepAverage = sleepWeek.length ? sleepWeek.reduce((sum, value) => sum + value, 0) / sleepWeek.length : null;
   if ($("sleep-average")) $("sleep-average").innerHTML = sleepAverage == null ? "— <small>hours</small>" : `${sleepAverage.toLocaleString("es-ES", { maximumFractionDigits: 1 })} <small>hours</small>`;
   if ($("sleep-nights")) $("sleep-nights").textContent = `${sleepWeek.length} / 7`;
+  const regularity = sleepRegularity();
+  if ($("sleep-regularity")) $("sleep-regularity").innerHTML = regularity.value == null ? "— <small>min</small>" : `±${regularity.value} <small>min</small>`;
+  if ($("sleep-regularity-note")) $("sleep-regularity-note").textContent = regularity.value == null
+    ? `Add bedtime and wake time for at least 3 nights in the last 14 days (${regularity.count}/3 so far).`
+    : `Average variation from your usual bedtime and wake time, based on ${regularity.count} nights in the last 14 days.`;
   $("activity-steps").textContent = steps ? Number(steps.value).toLocaleString("es-ES") : "—";
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
   listInto("recentEntries", sorted.slice(0, 4), "No entries yet", "Add a measurement to start building your personal history.");
