@@ -106,3 +106,5 @@
 .admin-empty{padding:22px 10px;color:var(--muted);font-size:11px;text-align:center}
 @media(max-width:900px){.admin-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.admin-user-row{align-items:flex-start;flex-direction:column}.admin-panel .panel-heading{align-items:flex-start;gap:10px}.admin-stats-grid{gap:9px}.admin-user-main strong{font-size:11px}}
+
+[data-admin-nav][hidden]{display:none!important}
