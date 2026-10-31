@@ -47,7 +47,7 @@
       <section class="page active" id="page-home">
         <div class="welcome-row"><div><div class="eyebrow">YOUR DAILY SNAPSHOT</div><h1>Good to see you<span class="green">.</span></h1><p class="muted" id="todayLabel">Your health and activity, in one place.</p></div><button class="primary-button" id="quickLog">＋ Add a measurement</button></div>
         <div class="hero-card">
-          <div class="hero-copy"><div class="eyebrow light">PULSE RECOVERY</div><div class="hero-number">—<span>/100</span></div><div class="hero-status"><span class="status-dot"></span> Waiting for enough data</div><p>Once you add consistent measurements, PULSE can help you explore your trends. No invented scores.</p></div>
+          <div class="hero-copy"><div class="eyebrow light">PULSE RECOVERY</div><div class="hero-number"><span id="homeRecoveryScore">—</span><span>/100</span></div><div class="hero-status"><span class="status-dot"></span><span id="homeRecoveryStatus">Waiting for enough consistent data</span></div><p>An experimental estimate from your HRV and sleep trends, compared with your own baseline. Not a medical measure.</p></div>
           <div class="hero-ring"><div class="ring-inner"><span>—</span><small>RECOVERY</small></div></div>
           <div class="hero-footer"><span>RECOVERY SCORE</span><span>Not available yet <b>↗</b></span></div>
         </div>
@@ -66,7 +66,7 @@
 
       <section class="page" id="page-recovery">
         <div class="page-intro"><div class="eyebrow">UNDERSTAND YOUR TRENDS</div><h1>Recovery<span class="green">.</span></h1><p class="muted">A clear view of your measurements over time.</p></div>
-        <div class="wide-stat"><div><div class="eyebrow">RECOVERY SCORE</div><div class="big-dash">— <span>/100</span></div><p class="muted">Not enough consistent data to calculate a meaningful trend.</p></div><div class="large-outline">♡</div></div>
+        <div class="wide-stat"><div><div class="eyebrow">RECOVERY SCORE</div><div class="big-dash"><span id="recoveryScore">—</span> <span>/100</span></div><p class="muted" id="recoveryExplanation">Need at least 7 days of HRV and sleep entries within the last 14 days.</p></div><div class="large-outline">♡</div></div>
         <div class="metric-grid two"><article class="metric-card"><div class="metric-top"><span>HEART RATE</span><span class="metric-symbol pink">♡</span></div><div class="metric-value" id="recovery-hr">— <small>bpm</small></div><div class="metric-foot">Latest entry</div></article><article class="metric-card"><div class="metric-top"><span>HRV</span><span class="metric-symbol violet">⌁</span></div><div class="metric-value" id="recovery-hrv">— <small>ms</small></div><div class="metric-foot">Latest entry</div></article></div>
         <article class="panel chart-panel"><div class="panel-heading"><div><div class="eyebrow">PERSONAL HISTORY</div><h3>Measurements</h3></div><span class="subtle">Last 7 entries</span></div><div id="recoveryHistory" class="chart-empty">Your measurement history will appear here.</div></article>
       </section>
