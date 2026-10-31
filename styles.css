@@ -63,3 +63,8 @@
 .logout-button{margin-left:auto;border:1px solid var(--line);background:#111a15;color:#a9b7ad;border-radius:8px;padding:6px 10px}
 [hidden]{display:none!important}
 @media(max-width:500px){.login-card{padding:26px 22px}.login-brand{margin-bottom:34px}}
+
+
+/* Account role indicator */
+.account-role { display: inline-block; margin-top: 4px; color: #9aa5a1; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.account-role.admin-role { color: #9de6b4; }
