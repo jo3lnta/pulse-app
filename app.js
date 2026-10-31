@@ -11,6 +11,7 @@ function loadEntries() {
 function saveEntries() {
   localStorage.setItem(STORE_KEY, JSON.stringify(entries));
   render();
+  if (currentUser) queueCloudSync();
 }
 function fmtDate(value) {
   return new Date(value + "T12:00:00").toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
@@ -267,3 +268,120 @@ $("clearData")?.addEventListener("click", () => {
   }
 });
 render();
+
+
+// PULSE account and private cloud sync.
+const PULSE_SUPABASE_URL = "https://sxsrlucazbgigxllxfgc.supabase.co";
+const PULSE_SUPABASE_KEY = "sb_publishable_WDTnMx0ugljuRqS4a16bGA_V-Y3c1w4";
+const pulseClient = window.supabase?.createClient(PULSE_SUPABASE_URL, PULSE_SUPABASE_KEY);
+let currentUser = null;
+let syncQueue = Promise.resolve();
+
+function setLoginMessage(message, isError = true) {
+  const el = $("loginMessage");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle("error", isError);
+}
+function showAccountState(signedIn) {
+  const login = $("loginScreen"), shell = document.querySelector(".app-shell");
+  if (login) login.hidden = signedIn;
+  if (shell) shell.hidden = !signedIn;
+  if ($("accountEmail")) $("accountEmail").textContent = currentUser?.email || "PULSE account";
+  if ($("accountInitial")) $("accountInitial").textContent = (currentUser?.email || "P").slice(0,1).toUpperCase();
+  if ($("syncStatus")) $("syncStatus").textContent = signedIn ? "CLOUD SYNC" : "SIGNED OUT";
+}
+function toCloudRow(entry, userId) {
+  let id = entry.id;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id))) {
+    id = crypto.randomUUID();
+    entry.id = id;
+  }
+  return {
+    id, user_id: userId, type: entry.type, value: Number(entry.value),
+    date: entry.date, created_at: Number(entry.createdAt || Date.now()),
+    bedtime: entry.bedtime || null, wake_time: entry.wakeTime || null
+  };
+}
+function fromCloudRow(row) {
+  return {
+    id: row.id, type: row.type, value: Number(row.value), date: row.date,
+    createdAt: Number(row.created_at), ...(row.bedtime ? {bedtime: row.bedtime.slice(0,5)} : {}),
+    ...(row.wake_time ? {wakeTime: row.wake_time.slice(0,5)} : {})
+  };
+}
+async function syncCloudEntries() {
+  if (!pulseClient || !currentUser) return;
+  const localRows = entries.map(entry => toCloudRow(entry, currentUser.id));
+  localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+  if (localRows.length) {
+    const { error: uploadError } = await pulseClient.from("entries").upsert(localRows, { onConflict: "id" });
+    if (uploadError) throw uploadError;
+  }
+  const { data, error } = await pulseClient.from("entries").select("id,type,value,date,created_at,bedtime,wake_time").eq("user_id", currentUser.id);
+  if (error) throw error;
+  const merged = new Map(entries.map(entry => [entry.id, entry]));
+  (data || []).forEach(row => { const entry = fromCloudRow(row); if (!merged.has(entry.id)) merged.set(entry.id, entry); });
+  entries = [...merged.values()].sort((a,b) => a.date.localeCompare(b.date) || a.createdAt-b.createdAt);
+  localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+  render();
+  if ($("syncStatus")) $("syncStatus").textContent = "SYNCED";
+}
+function queueCloudSync() {
+  syncQueue = syncQueue.then(syncCloudEntries).catch(error => {
+    console.error("PULSE cloud sync:", error);
+    if ($("syncStatus")) $("syncStatus").textContent = "SYNC ISSUE";
+    toast("Saved on this device. Cloud sync needs attention.");
+  });
+  return syncQueue;
+}
+async function handleLogin(event) {
+  event.preventDefault();
+  if (!pulseClient) { setLoginMessage("Could not load the secure sign-in service. Check your connection."); return; }
+  const button = $("loginSubmit");
+  button.disabled = true; button.textContent = "Signing in…";
+  setLoginMessage("");
+  const { data, error } = await pulseClient.auth.signInWithPassword({
+    email: $("loginEmail").value.trim(), password: $("loginPassword").value
+  });
+  button.disabled = false; button.textContent = "Sign in";
+  if (error) { setLoginMessage("Sign-in failed. Check your email and password, or ask the account administrator."); return; }
+  currentUser = data.user;
+  showAccountState(true);
+  setLoginMessage("");
+  try {
+    await syncCloudEntries();
+    toast("PULSE synced securely.");
+  } catch (syncError) {
+    console.error("PULSE initial sync:", syncError);
+    if ($("syncStatus")) $("syncStatus").textContent = "SYNC ISSUE";
+    toast("Signed in. Some records remain only on this device until sync succeeds.");
+  }
+}
+async function handleLogout() {
+  if (!pulseClient) return;
+  await pulseClient.auth.signOut();
+  currentUser = null;
+  showAccountState(false);
+  setLoginMessage("You have signed out.", false);
+}
+$("loginForm")?.addEventListener("submit", handleLogin);
+$("logoutButton")?.addEventListener("click", handleLogout);
+(async function initialisePulseAuth() {
+  if (!pulseClient) {
+    setLoginMessage("The sign-in service did not load. Check your internet connection.");
+    showAccountState(false); return;
+  }
+  const { data, error } = await pulseClient.auth.getSession();
+  if (error || !data.session) { currentUser = null; showAccountState(false); return; }
+  currentUser = data.session.user;
+  showAccountState(true);
+  try { await syncCloudEntries(); }
+  catch (syncError) {
+    console.error("PULSE restore sync:", syncError);
+    if ($("syncStatus")) $("syncStatus").textContent = "SYNC ISSUE";
+  }
+  pulseClient.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT") { currentUser = null; showAccountState(false); }
+  });
+})();
