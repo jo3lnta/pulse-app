@@ -29,3 +29,13 @@
 .sleep-time-grid label{margin:0}
 .sleep-time-fields .form-note{margin-bottom:0}
 @media(max-width:420px){.sleep-time-grid{grid-template-columns:1fr}}
+
+/* Mobile sleep form: keep all fields reachable on short screens */
+@media(max-width:700px){
+  .log-dialog{max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}
+  .log-dialog form{padding:18px}
+  .dialog-head{margin-bottom:16px}
+  .log-dialog label{margin:10px 0}
+  .sleep-time-fields{display:block}
+  .sleep-time-fields[hidden]{display:none!important}
+}
