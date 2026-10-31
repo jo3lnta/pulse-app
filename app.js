@@ -275,6 +275,7 @@ const PULSE_SUPABASE_URL = "https://sxsrlucazbgigxllxfgc.supabase.co";
 const PULSE_SUPABASE_KEY = "sb_publishable_WDTnMx0ugljuRqS4a16bGA_V-Y3c1w4";
 const pulseClient = window.supabase?.createClient(PULSE_SUPABASE_URL, PULSE_SUPABASE_KEY);
 let currentUser = null;
+let currentRole = "user";
 let syncQueue = Promise.resolve();
 
 function setLoginMessage(message, isError = true) {
@@ -283,7 +284,15 @@ function setLoginMessage(message, isError = true) {
   el.textContent = message;
   el.classList.toggle("error", isError);
 }
+async function loadCurrentRole() {
+  currentRole = "user";
+  if (!pulseClient || !currentUser) return;
+  const { data, error } = await pulseClient.from("user_roles").select("role").eq("user_id", currentUser.id).maybeSingle();
+  if (!error && data?.role === "admin") currentRole = "admin";
+}
 function showAccountState(signedIn) {
+  const roleEl = $("accountRole");
+  if (roleEl) { roleEl.hidden = !signedIn; roleEl.textContent = currentRole === "admin" ? "MASTER ADMIN" : "MEMBER"; roleEl.classList.toggle("admin-role", currentRole === "admin"); }
   const login = $("loginScreen"), shell = document.querySelector(".app-shell");
   if (login) login.hidden = signedIn;
   if (shell) shell.hidden = !signedIn;
@@ -347,6 +356,7 @@ async function handleLogin(event) {
   button.disabled = false; button.textContent = "Sign in";
   if (error) { setLoginMessage("Sign-in failed. Check your email and password, or ask the account administrator."); return; }
   currentUser = data.user;
+  await loadCurrentRole();
   showAccountState(true);
   setLoginMessage("");
   try {
@@ -362,6 +372,7 @@ async function handleLogout() {
   if (!pulseClient) return;
   await pulseClient.auth.signOut();
   currentUser = null;
+  currentRole = "user";
   showAccountState(false);
   setLoginMessage("You have signed out.", false);
 }
@@ -375,6 +386,7 @@ $("logoutButton")?.addEventListener("click", handleLogout);
   const { data, error } = await pulseClient.auth.getSession();
   if (error || !data.session) { currentUser = null; showAccountState(false); return; }
   currentUser = data.session.user;
+  await loadCurrentRole();
   showAccountState(true);
   try { await syncCloudEntries(); }
   catch (syncError) {
