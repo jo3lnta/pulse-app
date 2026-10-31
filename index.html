@@ -10,8 +10,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PULSE">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icons/pulse-192.png" type="image/png">
-  <link rel="apple-touch-icon" href="icons/pulse-192.png">
+  <link rel="icon" href="icons/pulse.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/pulse.svg">
   <title>PULSE — Performance, made personal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +21,7 @@
 <body>
   <section class="login-screen" id="loginScreen">
     <div class="login-card">
-      <div class="login-brand"><span class="brand-mark">P</span><span>PULSE<span class="dot">.</span></span></div>
+      <div class="login-brand"><img class="brand-mark" src="icons/pulse.svg" alt=""><span>PULSE<span class="dot">.</span></span></div>
       <div class="eyebrow">PRIVATE PERSONAL DASHBOARD</div>
       <h1>Welcome back<span class="green">.</span></h1>
       <p class="login-copy">Sign in to access your personal PULSE data and keep your devices in sync.</p>
@@ -38,7 +38,7 @@
   </section>
   <div class="app-shell" hidden>
     <aside class="sidebar">
-      <a class="brand" href="#" aria-label="PULSE inicio"><span class="brand-mark">P</span><span>PULSE<span class="dot">.</span></span></a>
+      <a class="brand" href="#" aria-label="PULSE inicio"><img class="brand-mark" src="icons/pulse.svg" alt=""><span>PULSE<span class="dot">.</span></span></a>
       <div class="side-label">WORKSPACE</div>
       <nav class="nav">
         <button class="nav-link active" data-page="home"><span class="nav-icon">◫</span> Overview</button>
@@ -57,7 +57,7 @@
 
     <main class="main">
       <header class="topbar">
-        <div class="mobile-brand"><span class="brand-mark">P</span> PULSE<span class="dot">.</span></div>
+        <div class="mobile-brand"><img class="brand-mark" src="icons/pulse.svg" alt=""> PULSE<span class="dot">.</span></div>
         <div class="breadcrumb">Workspace <span>/</span> <strong id="crumb">Overview</strong></div>
         <div class="top-actions"><span class="live-dot"></span><span class="local-label">LOCAL MODE</span><button class="icon-button" id="dateButton" title="Today's date">▦</button></div>
       </header>
