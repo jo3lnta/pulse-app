@@ -56,35 +56,23 @@ function sleepRegularity() {
   return { value: Math.round((bedtimeVariation + wakeVariation) / 2), count: nights.length };
 }
 function recoveryEstimate() {
-  // Experimental personal trend only: HRV and sleep are compared with the user's own recent baseline.
-  // Generic heart-rate entries are excluded because they are not identified as resting measurements.
-  const cutoff = new Date(today);
-  cutoff.setDate(cutoff.getDate() - 13);
+  // Experimental personal trend indicator, not a medical score or training recommendation.
+  const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() - 13);
   const cutoffISO = new Date(cutoff.getTime() - cutoff.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   const dailyValues = type => {
-    const byDate = new Map();
-    entries.filter(e => e.type === type && e.date >= cutoffISO && e.date <= isoToday)
-      .sort((a, b) => a.createdAt - b.createdAt)
-      .forEach(e => byDate.set(e.date, Number(e.value)));
-    return [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    const map = new Map();
+    entries.filter(e => e.type === type && e.date >= cutoffISO && e.date <= isoToday).sort((a,b) => a.createdAt-b.createdAt).forEach(e => map.set(e.date, Number(e.value)));
+    return [...map.entries()].sort((a,b) => a[0].localeCompare(b[0]));
   };
-  const hrv = dailyValues("hrv");
-  const sleep = dailyValues("sleep");
-  if (hrv.length < 7 || sleep.length < 7) {
-    return { value: null, message: "Need at least 7 days of HRV and sleep entries within the last 14 days." };
-  }
-  const newest = [hrv[hrv.length - 1][0], sleep[sleep.length - 1][0]].sort().pop();
-  const daysOld = Math.floor((new Date(isoToday + "T12:00:00") - new Date(newest + "T12:00:00")) / 86400000);
-  if (daysOld > 3) {
-    return { value: null, message: "Add recent HRV and sleep entries to refresh this estimate." };
-  }
-  const component = series => {
-    const baseline = median(series.slice(0, -1).map(item => item[1]));
-    const latestValue = series[series.length - 1][1];
-    if (!Number.isFinite(baseline) || baseline <= 0) return 50;
-    return Math.max(0, Math.min(100, 50 + ((latestValue - baseline) / baseline) * 200));
-  };
-  return { value: Math.round((component(hrv) + component(sleep)) / 2), message: "Experimental estimate based on your recent HRV and sleep trends." };
+  const hrv=dailyValues('hrv'), sleep=dailyValues('sleep');
+  if(hrv.length<7||sleep.length<7) return {value:null,message:'Add at least 7 days of HRV and sleep records within 14 days to see a personal trend.'};
+  const newest=[hrv[hrv.length-1][0],sleep[sleep.length-1][0]].sort().pop();
+  const daysOld=Math.floor((new Date(isoToday+'T12:00:00')-new Date(newest+'T12:00:00'))/86400000);
+  if(daysOld>3) return {value:null,message:'Add recent HRV and sleep records to refresh this trend.'};
+  const compare=series=>{const baseline=median(series.slice(0,-1).slice(-6).map(x=>x[1]));const current=series[series.length-1][1];if(!Number.isFinite(baseline)||baseline<=0)return null;return Math.max(0,Math.min(100,50+((current-baseline)/baseline)*100));};
+  const hrvTrend=compare(hrv),sleepTrend=compare(sleep);
+  if(hrvTrend==null||sleepTrend==null)return {value:null,message:'Not enough valid personal baseline data yet.'};
+  return {value:Math.round((hrvTrend+sleepTrend)/2),message:'A rough comparison of your latest HRV and sleep duration with your own recent records. It is not a medical measure.'};
 }
 
 function displayValue(type, suffix) {
@@ -213,6 +201,7 @@ function render() {
   const recovery = recoveryEstimate();
   if ($("homeRecoveryScore")) $("homeRecoveryScore").textContent = recovery.value == null ? "—" : recovery.value;
   if ($("recoveryScore")) $("recoveryScore").textContent = recovery.value == null ? "—" : recovery.value;
+  if ($("homeRecoveryRing")) $("homeRecoveryRing").textContent = recovery.value == null ? "—" : recovery.value;
   if ($("homeRecoveryStatus")) $("homeRecoveryStatus").textContent = recovery.value == null ? "Waiting for enough consistent data" : "Experimental personal trend estimate";
   if ($("recoveryExplanation")) $("recoveryExplanation").textContent = recovery.message;
   $("home-hr").innerHTML = displayValue("hr", "bpm");
@@ -241,6 +230,21 @@ function render() {
     ? `Add bedtime and wake time for at least 3 nights in the last 14 days (${regularity.count}/3 so far).`
     : `Average variation from your usual bedtime and wake time, based on ${regularity.count} nights in the last 14 days.`;
   $("activity-steps").textContent = steps ? Number(steps.value).toLocaleString("es-ES") : "—";
+  const weekStart=new Date(today); weekStart.setDate(weekStart.getDate()-6);
+  const weekStartISO=new Date(weekStart.getTime()-weekStart.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  const dailyByType=type=>{const map=new Map();entries.filter(e=>e.type===type&&e.date>=weekStartISO&&e.date<=isoToday).sort((a,b)=>a.createdAt-b.createdAt).forEach(e=>map.set(e.date,Number(e.value)));return [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));};
+  const stepWeek=dailyByType('steps'), sleepDays=dailyByType('sleep');
+  const stepTotal=stepWeek.reduce((sum,x)=>sum+x[1],0), stepAverage=stepWeek.length?stepTotal/stepWeek.length:null;
+  const sleepWeekAverage=sleepDays.length?sleepDays.reduce((sum,x)=>sum+x[1],0)/sleepDays.length:null;
+  if($('home-week-steps'))$('home-week-steps').textContent=stepTotal?Math.round(stepTotal).toLocaleString('es-ES'):'—';
+  if($('home-week-step-average'))$('home-week-step-average').textContent=stepAverage==null?'No step records yet':`Average ${Math.round(stepAverage).toLocaleString('es-ES')} per recorded day`;
+  if($('home-week-sleep'))$('home-week-sleep').textContent=sleepWeekAverage==null?'—':sleepWeekAverage.toLocaleString('es-ES',{maximumFractionDigits:1})+' h';
+  if($('home-week-sleep-note'))$('home-week-sleep-note').textContent=`${sleepDays.length} of 7 days recorded`;
+  if($('home-week-active'))$('home-week-active').textContent=`${stepWeek.length} / 7`;
+  if($('activity-week-total'))$('activity-week-total').textContent=stepTotal?Math.round(stepTotal).toLocaleString('es-ES'):'—';
+  if($('activity-week-average'))$('activity-week-average').textContent=stepAverage==null?'—':Math.round(stepAverage).toLocaleString('es-ES');
+  if($('activity-days'))$('activity-days').textContent=`${stepWeek.length} / 7`;
+  if($('recovery-data-note'))$('recovery-data-note').textContent=recovery.message;
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
   listInto("recentEntries", sorted.slice(0, 4), "No entries yet", "Add a measurement to start building your personal history.");
   const sleepEl = $("sleepEntries");
