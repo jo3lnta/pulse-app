@@ -68,3 +68,24 @@
 /* Account role indicator */
 .account-role { display: inline-block; margin-top: 4px; color: #9aa5a1; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
 .account-role.admin-role { color: #9de6b4; }
+
+
+/* PULSE administrator workspace */
+.admin-stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:17px}
+.admin-panel{margin-top:4px}
+.admin-panel .panel-heading{align-items:center}
+.admin-user-list{display:grid}
+.admin-user-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 0;border-top:1px solid var(--line)}
+.admin-user-main{min-width:0;display:grid;gap:5px}
+.admin-user-main strong{font-size:12px;overflow-wrap:anywhere}
+.admin-user-main span,.admin-user-main small{font-size:10px;color:var(--muted)}
+.admin-user-controls{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.admin-state{font-size:9px;font-weight:800;letter-spacing:1px}
+.admin-state.active{color:var(--green)}
+.admin-state.blocked{color:#ff9da5}
+.admin-user-action{border:1px solid #60383c;background:#261719;color:#ff9da5;border-radius:8px;padding:8px 11px;font-size:10px;font-weight:700}
+.admin-user-action.is-unblock{border-color:#285c43;background:#13251b;color:var(--green)}
+.admin-user-action:disabled{opacity:.5;cursor:wait}
+.admin-empty{padding:22px 10px;color:var(--muted);font-size:11px;text-align:center}
+@media(max-width:900px){.admin-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.admin-user-row{align-items:flex-start;flex-direction:column}.admin-user-controls{width:100%;justify-content:space-between}.admin-panel .panel-heading{align-items:flex-start;gap:10px}.admin-stats-grid{gap:9px}.admin-user-main strong{font-size:11px}}
