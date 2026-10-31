@@ -28,7 +28,7 @@ function median(values) {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 function clockMinutes(time) {
-  if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time || "")) return null;
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time || "")) return null;
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
 }
