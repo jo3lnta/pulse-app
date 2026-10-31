@@ -114,9 +114,10 @@ function displayValue(type, suffix) {
 })();
 
 function showPage(page) {
+  if (page === "admin" && currentRole !== "admin") page = "home";
   document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === `page-${page}`));
   document.querySelectorAll(".nav-link[data-page]").forEach(b => b.classList.toggle("active", b.dataset.page === page));
-  const names = { home: "Overview", recovery: "Recovery", sleep: "Sleep", activity: "Activity", profile: "Profile & settings" };
+  const names = { home: "Overview", recovery: "Recovery", sleep: "Sleep", activity: "Activity", profile: "Profile & settings", admin: "Administration" };
   if ($("crumb")) $("crumb").textContent = names[page] || "Overview";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -311,6 +312,7 @@ function showAccountState(signedIn) {
   if ($("accountEmail")) $("accountEmail").textContent = currentUser?.email || "PULSE account";
   if ($("accountInitial")) $("accountInitial").textContent = (currentUser?.email || "P").slice(0,1).toUpperCase();
   if ($("syncStatus")) $("syncStatus").textContent = signedIn ? "CLOUD SYNC" : "SIGNED OUT";
+  document.querySelectorAll("[data-admin-nav]").forEach(el => { el.hidden = !(signedIn && currentRole === "admin"); });
 }
 function toCloudRow(entry, userId) {
   let id = entry.id;
@@ -381,6 +383,43 @@ async function handleLogin(event) {
     toast("Signed in. Some records remain only on this device until sync succeeds.");
   }
 }
+
+function escapeAdminText(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+}
+function formatAdminDate(value) {
+  if (!value) return "Never";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+}
+async function loadAdminDashboard() {
+  if (currentRole !== "admin" || !currentUser) return;
+  const status = $("adminStatus"), list = $("adminUsers");
+  if (status) status.textContent = "Loading account overview…";
+  if (list) list.innerHTML = "";
+  try {
+    const { data, error } = await pulseClient.functions.invoke("pulse-admin", { body: { action: "list" } });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    const stats = data.stats || {};
+    $("adminTotalUsers").textContent = String(stats.total_users ?? 0);
+    $("adminActiveUsers").textContent = String(stats.active_users ?? 0);
+    $("adminBlockedUsers").textContent = String(stats.blocked_users ?? 0);
+    $("adminTotalEntries").textContent = String(stats.total_entries ?? 0);
+    const users = data.users || [];
+    if (list) list.innerHTML = users.map(user => {
+      const blocked = Boolean(user.banned_until && new Date(user.banned_until) > new Date());
+      return `<article class="admin-user-row"><div class="admin-user-main"><strong>${escapeAdminText(user.email || "No email")}</strong><span>${user.role === "admin" ? "ADMIN" : "MEMBER"} · ${Number(user.entry_count || 0)} records</span><small>Joined ${formatAdminDate(user.created_at)} · Last sign-in: ${formatAdminDate(user.last_sign_in_at)}</small></div><span class="admin-state ${blocked ? "blocked" : "active"}">${blocked ? "BLOCKED" : "ACTIVE"}</span></article>`;
+    }).join("") || '<div class="admin-empty">No accounts found.</div>';
+    if (status) status.textContent = `Updated just now · ${users.length} accounts`;
+  } catch (error) {
+    console.error("PULSE admin:", error);
+    if (status) status.textContent = "Could not load the admin overview. Check your connection and try again.";
+    if (list) list.innerHTML = '<div class="admin-empty">The secure admin service returned an error.</div>';
+  }
+}
+$("adminRefresh")?.addEventListener("click", loadAdminDashboard);
+
 async function handleLogout() {
   if (!pulseClient) return;
   await pulseClient.auth.signOut();
@@ -408,6 +447,7 @@ $("logoutButton")?.addEventListener("click", handleLogout);
     console.error("PULSE restore sync:", syncError);
     if ($("syncStatus")) $("syncStatus").textContent = "SYNC ISSUE";
   }
+  if (currentRole === "admin") await loadAdminDashboard();
   pulseClient.auth.onAuthStateChange((event, session) => {
     if (event === "SIGNED_OUT") { currentUser = null; showAccountState(false); }
   });
