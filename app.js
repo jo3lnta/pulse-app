@@ -1,4 +1,16 @@
 const STORE_KEY = "pulse.entries.v1";
+const MASTER_UID = "3570b46e-0ad3-4b1b-9b40-47b379fb1a4c";
+function accountStoreKey(userId) { return `${STORE_KEY}.${userId}`; }
+function activateAccountData(user) {
+  const key = accountStoreKey(user.id);
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved !== null) entries = JSON.parse(saved) || [];
+    else if (user.id === MASTER_UID) entries = loadEntries();
+    else entries = [];
+    localStorage.setItem(key, JSON.stringify(entries));
+  } catch { entries = []; }
+}
 const $ = (id) => document.getElementById(id);
 const today = new Date();
 const isoToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
@@ -9,7 +21,7 @@ function loadEntries() {
   catch { return []; }
 }
 function saveEntries() {
-  localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+  localStorage.setItem(currentUser ? accountStoreKey(currentUser.id) : STORE_KEY, JSON.stringify(entries));
   render();
   if (currentUser) queueCloudSync();
 }
@@ -322,7 +334,7 @@ function fromCloudRow(row) {
 async function syncCloudEntries() {
   if (!pulseClient || !currentUser) return;
   const localRows = entries.map(entry => toCloudRow(entry, currentUser.id));
-  localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+  localStorage.setItem(accountStoreKey(currentUser.id), JSON.stringify(entries));
   if (localRows.length) {
     const { error: uploadError } = await pulseClient.from("entries").upsert(localRows, { onConflict: "id" });
     if (uploadError) throw uploadError;
@@ -332,7 +344,7 @@ async function syncCloudEntries() {
   const merged = new Map(entries.map(entry => [entry.id, entry]));
   (data || []).forEach(row => { const entry = fromCloudRow(row); if (!merged.has(entry.id)) merged.set(entry.id, entry); });
   entries = [...merged.values()].sort((a,b) => a.date.localeCompare(b.date) || a.createdAt-b.createdAt);
-  localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+  localStorage.setItem(accountStoreKey(currentUser.id), JSON.stringify(entries));
   render();
   if ($("syncStatus")) $("syncStatus").textContent = "SYNCED";
 }
@@ -356,6 +368,7 @@ async function handleLogin(event) {
   button.disabled = false; button.textContent = "Sign in";
   if (error) { setLoginMessage("Sign-in failed. Check your email and password, or ask the account administrator."); return; }
   currentUser = data.user;
+  activateAccountData(currentUser);
   await loadCurrentRole();
   showAccountState(true);
   setLoginMessage("");
@@ -373,6 +386,7 @@ async function handleLogout() {
   await pulseClient.auth.signOut();
   currentUser = null;
   currentRole = "user";
+  entries = [];
   showAccountState(false);
   setLoginMessage("You have signed out.", false);
 }
@@ -386,6 +400,7 @@ $("logoutButton")?.addEventListener("click", handleLogout);
   const { data, error } = await pulseClient.auth.getSession();
   if (error || !data.session) { currentUser = null; showAccountState(false); return; }
   currentUser = data.session.user;
+  activateAccountData(currentUser);
   await loadCurrentRole();
   showAccountState(true);
   try { await syncCloudEntries(); }
