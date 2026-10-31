@@ -21,6 +21,44 @@ function shortDate(value) {
 function latest(type) {
   return entries.filter(e => e.type === type).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)[0];
 }
+
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+function recoveryEstimate() {
+  // Experimental personal trend only: HRV and sleep are compared with the user's own recent baseline.
+  // Generic heart-rate entries are excluded because they are not identified as resting measurements.
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() - 13);
+  const cutoffISO = new Date(cutoff.getTime() - cutoff.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const dailyValues = type => {
+    const byDate = new Map();
+    entries.filter(e => e.type === type && e.date >= cutoffISO && e.date <= isoToday)
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .forEach(e => byDate.set(e.date, Number(e.value)));
+    return [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  };
+  const hrv = dailyValues("hrv");
+  const sleep = dailyValues("sleep");
+  if (hrv.length < 7 || sleep.length < 7) {
+    return { value: null, message: "Need at least 7 days of HRV and sleep entries within the last 14 days." };
+  }
+  const newest = [hrv[hrv.length - 1][0], sleep[sleep.length - 1][0]].sort().pop();
+  const daysOld = Math.floor((new Date(isoToday + "T12:00:00") - new Date(newest + "T12:00:00")) / 86400000);
+  if (daysOld > 3) {
+    return { value: null, message: "Add recent HRV and sleep entries to refresh this estimate." };
+  }
+  const component = series => {
+    const baseline = median(series.slice(0, -1).map(item => item[1]));
+    const latestValue = series[series.length - 1][1];
+    if (!Number.isFinite(baseline) || baseline <= 0) return 50;
+    return Math.max(0, Math.min(100, 50 + ((latestValue - baseline) / baseline) * 200));
+  };
+  return { value: Math.round((component(hrv) + component(sleep)) / 2), message: "Experimental estimate based on your recent HRV and sleep trends." };
+}
+
 function displayValue(type, suffix) {
   const e = latest(type);
   return e ? `${Number(e.value).toLocaleString("es-ES", { maximumFractionDigits: 1 })} <small>${suffix}</small>` : `— <small>${suffix}</small>`;
@@ -126,6 +164,11 @@ function chartsInto(id, types) {
 }
 
 function render() {
+  const recovery = recoveryEstimate();
+  if ($("homeRecoveryScore")) $("homeRecoveryScore").textContent = recovery.value == null ? "—" : recovery.value;
+  if ($("recoveryScore")) $("recoveryScore").textContent = recovery.value == null ? "—" : recovery.value;
+  if ($("homeRecoveryStatus")) $("homeRecoveryStatus").textContent = recovery.value == null ? "Waiting for enough consistent data" : "Experimental personal trend estimate";
+  if ($("recoveryExplanation")) $("recoveryExplanation").textContent = recovery.message;
   $("home-hr").innerHTML = displayValue("hr", "bpm");
   $("home-hrv").innerHTML = displayValue("hrv", "ms");
   $("home-sleep").innerHTML = displayValue("sleep", "h");
