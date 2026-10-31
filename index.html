@@ -19,7 +19,24 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app-shell">
+  <section class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-brand"><span class="brand-mark">P</span><span>PULSE<span class="dot">.</span></span></div>
+      <div class="eyebrow">PRIVATE PERSONAL DASHBOARD</div>
+      <h1>Welcome back<span class="green">.</span></h1>
+      <p class="login-copy">Sign in to access your personal PULSE data and keep your devices in sync.</p>
+      <form id="loginForm">
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" type="email" autocomplete="username" placeholder="Your account email" required>
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password" required>
+        <button class="primary-button login-submit" id="loginSubmit" type="submit">Sign in</button>
+        <p class="login-message" id="loginMessage" role="status">Access is limited to accounts created by the PULSE administrator.</p>
+      </form>
+      <div class="login-lock">⌑ <span>Your records are private to your account.</span></div>
+    </div>
+  </section>
+  <div class="app-shell" hidden>
     <aside class="sidebar">
       <a class="brand" href="#" aria-label="PULSE inicio"><span class="brand-mark">P</span><span>PULSE<span class="dot">.</span></span></a>
       <div class="side-label">WORKSPACE</div>
@@ -124,6 +141,7 @@
     </form>
   </dialog>
   <div class="toast" id="toast" role="status"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="app.js"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
