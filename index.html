@@ -77,6 +77,7 @@
         <div class="metric-grid two sleep-summary">
           <article class="metric-card"><div class="metric-top"><span>7-DAY AVERAGE</span><span class="metric-symbol blue">◷</span></div><div class="metric-value" id="sleep-average">— <small>hours</small></div><div class="metric-foot">Average of nights recorded in the last 7 days</div></article>
           <article class="metric-card"><div class="metric-top"><span>NIGHTS LOGGED</span><span class="metric-symbol green">☾</span></div><div class="metric-value" id="sleep-nights">0 / 7</div><div class="metric-foot">Days with a sleep entry in the last 7 days</div></article>
+          <article class="metric-card"><div class="metric-top"><span>SCHEDULE VARIATION</span><span class="metric-symbol violet">◷</span></div><div class="metric-value" id="sleep-regularity">— <small>min</small></div><div class="metric-foot" id="sleep-regularity-note">Add bedtime and wake time for at least 3 nights.</div></article>
         </div>
         <article class="panel"><div class="panel-heading"><div><div class="eyebrow">SLEEP LOG</div><h3>Recent nights</h3></div><button class="primary-button small" data-open-log="sleep">＋ Log sleep</button></div><div id="sleepEntries" class="empty-state compact"><div class="empty-icon">☾</div><strong>No sleep entries yet</strong><p>Your sleep history will appear here.</p></div></article>
         <p class="disclaimer">Sleep duration is only one part of sleep health. This app does not assess sleep disorders.</p>
@@ -109,6 +110,13 @@
       <label>Measurement type<select id="entryType"><option value="hr">Heart rate (bpm)</option><option value="hrv">HRV (ms)</option><option value="sleep">Sleep duration (hours)</option><option value="steps">Steps (count)</option></select></label>
       <label>Value<input id="entryValue" type="number" min="0" step="any" placeholder="Enter a value" required></label>
       <label>Date<input id="entryDate" type="date" required></label>
+      <div id="sleepTimeFields" class="sleep-time-fields" hidden>
+        <div class="sleep-time-grid">
+          <label>Bedtime<input id="bedtime" type="time"></label>
+          <label>Wake time<input id="wakeTime" type="time"></label>
+        </div>
+        <p class="form-note">Optional. Enter both times to include this night in schedule regularity.</p>
+      </div>
       <div class="form-error" id="formError"></div>
       <div class="dialog-actions"><button type="button" class="outline-button" id="cancelLog">Cancel</button><button type="submit" class="primary-button">Save entry</button></div>
       <p class="form-note">Only enter measurements from a device or source you trust. Don't guess values.</p>
