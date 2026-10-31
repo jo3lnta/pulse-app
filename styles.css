@@ -39,3 +39,6 @@
   .sleep-time-fields{display:block}
   .sleep-time-fields[hidden]{display:none!important}
 }
+
+/* Weekly dashboard and activity summaries */
+.pulse-week-overview,.activity-summary{margin:18px 0}.pulse-week-overview .metric-card,.activity-summary .metric-card{min-height:125px}@media(max-width:700px){.pulse-week-overview,.activity-summary{grid-template-columns:1fr 1fr}.pulse-week-overview .metric-card,.activity-summary .metric-card{min-height:118px}}@media(max-width:390px){.pulse-week-overview,.activity-summary{grid-template-columns:1fr}}
