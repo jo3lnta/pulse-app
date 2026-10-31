@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d0c">
+  <meta name="description" content="PULSE — your personal health and activity dashboard.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PULSE">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/pulse-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/pulse-192.png">
+  <title>PULSE — Performance, made personal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="PULSE inicio"><span class="brand-mark">P</span><span>PULSE<span class="dot">.</span></span></a>
+      <div class="side-label">WORKSPACE</div>
+      <nav class="nav">
+        <button class="nav-link active" data-page="home"><span class="nav-icon">◫</span> Overview</button>
+        <button class="nav-link" data-page="recovery"><span class="nav-icon">♡</span> Recovery</button>
+        <button class="nav-link" data-page="sleep"><span class="nav-icon">☾</span> Sleep</button>
+        <button class="nav-link" data-page="activity"><span class="nav-icon">⌁</span> Activity</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="side-label">PERSONAL</div>
+        <button class="nav-link" data-page="profile"><span class="nav-icon">◎</span> Profile & settings</button>
+        <div class="privacy-card"><span class="privacy-icon">⌑</span><div><strong>Your data stays yours</strong><p>This prototype saves entries in this browser only.</p></div></div>
+        <div class="user-mini"><div class="avatar">J</div><div><strong>My PULSE</strong><span>Personal dashboard</span></div><span class="more">···</span></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="mobile-brand"><span class="brand-mark">P</span> PULSE<span class="dot">.</span></div>
+        <div class="breadcrumb">Workspace <span>/</span> <strong id="crumb">Overview</strong></div>
+        <div class="top-actions"><span class="live-dot"></span><span class="local-label">LOCAL MODE</span><button class="icon-button" id="dateButton" title="Today's date">▦</button></div>
+      </header>
+
+      <section class="page active" id="page-home">
+        <div class="welcome-row"><div><div class="eyebrow">YOUR DAILY SNAPSHOT</div><h1>Good to see you<span class="green">.</span></h1><p class="muted" id="todayLabel">Your health and activity, in one place.</p></div><button class="primary-button" id="quickLog">＋ Add a measurement</button></div>
+        <div class="hero-card">
+          <div class="hero-copy"><div class="eyebrow light">PULSE RECOVERY</div><div class="hero-number">—<span>/100</span></div><div class="hero-status"><span class="status-dot"></span> Waiting for enough data</div><p>Once you add consistent measurements, PULSE can help you explore your trends. No invented scores.</p></div>
+          <div class="hero-ring"><div class="ring-inner"><span>—</span><small>RECOVERY</small></div></div>
+          <div class="hero-footer"><span>RECOVERY SCORE</span><span>Not available yet <b>↗</b></span></div>
+        </div>
+        <div class="section-heading"><div><div class="eyebrow">AT A GLANCE</div><h2>Today's metrics</h2></div><span class="subtle">Based on your entries</span></div>
+        <div class="metric-grid">
+          <article class="metric-card"><div class="metric-top"><span>HEART RATE</span><span class="metric-symbol pink">♡</span></div><div class="metric-value" id="home-hr">— <small>bpm</small></div><div class="metric-foot">Latest manual entry</div><div class="sparkline pink-line"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+          <article class="metric-card"><div class="metric-top"><span>HRV</span><span class="metric-symbol violet">⌁</span></div><div class="metric-value" id="home-hrv">— <small>ms</small></div><div class="metric-foot">Latest manual entry</div><div class="sparkline violet-line"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+          <article class="metric-card"><div class="metric-top"><span>SLEEP</span><span class="metric-symbol blue">☾</span></div><div class="metric-value" id="home-sleep">— <small>h</small></div><div class="metric-foot">Last sleep entry</div><div class="sparkline blue-line"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+          <article class="metric-card"><div class="metric-top"><span>STEPS</span><span class="metric-symbol green">⌁</span></div><div class="metric-value" id="home-steps">— <small>steps</small></div><div class="metric-foot">Today's total</div><div class="sparkline green-line"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+        </div>
+        <div class="bottom-grid">
+          <article class="panel"><div class="panel-heading"><div><div class="eyebrow">RECENT ACTIVITY</div><h3>Latest entries</h3></div><button class="text-button" data-goto="activity">View all ↗</button></div><div id="recentEntries" class="empty-state"><div class="empty-icon">⌁</div><strong>No entries yet</strong><p>Add a measurement to start building your personal history.</p><button class="outline-button" id="firstLog">Add first entry</button></div></article>
+          <article class="panel note-panel"><div class="note-icon">✳</div><div class="eyebrow">A NOTE FROM PULSE</div><h3>Better data.<br>Better context.</h3><p>PULSE is a personal tracking tool, not a medical device. It won't diagnose conditions or tell you whether you should train.</p><span class="note-link" data-goto="profile">About your data ↗</span></article>
+        </div>
+      </section>
+
+      <section class="page" id="page-recovery">
+        <div class="page-intro"><div class="eyebrow">UNDERSTAND YOUR TRENDS</div><h1>Recovery<span class="green">.</span></h1><p class="muted">A clear view of your measurements over time.</p></div>
+        <div class="wide-stat"><div><div class="eyebrow">RECOVERY SCORE</div><div class="big-dash">— <span>/100</span></div><p class="muted">Not enough consistent data to calculate a meaningful trend.</p></div><div class="large-outline">♡</div></div>
+        <div class="metric-grid two"><article class="metric-card"><div class="metric-top"><span>HEART RATE</span><span class="metric-symbol pink">♡</span></div><div class="metric-value" id="recovery-hr">— <small>bpm</small></div><div class="metric-foot">Latest entry</div></article><article class="metric-card"><div class="metric-top"><span>HRV</span><span class="metric-symbol violet">⌁</span></div><div class="metric-value" id="recovery-hrv">— <small>ms</small></div><div class="metric-foot">Latest entry</div></article></div>
+        <article class="panel chart-panel"><div class="panel-heading"><div><div class="eyebrow">PERSONAL HISTORY</div><h3>Measurements</h3></div><span class="subtle">Last 7 entries</span></div><div id="recoveryHistory" class="chart-empty">Your measurement history will appear here.</div></article>
+      </section>
+
+      <section class="page" id="page-sleep">
+        <div class="page-intro"><div class="eyebrow">REST & ROUTINE</div><h1>Sleep<span class="green">.</span></h1><p class="muted">Track your sleep duration and build a consistent history.</p></div>
+        <div class="sleep-feature"><div><div class="eyebrow light">LAST RECORDED SLEEP</div><div class="sleep-big" id="sleep-last">— <small>hours</small></div><p>Log your sleep duration to see it here.</p></div><div class="moon-art">☾</div></div>
+        <article class="panel"><div class="panel-heading"><div><div class="eyebrow">SLEEP LOG</div><h3>Recent nights</h3></div><button class="primary-button small" data-open-log="sleep">＋ Log sleep</button></div><div id="sleepEntries" class="empty-state compact"><div class="empty-icon">☾</div><strong>No sleep entries yet</strong><p>Your sleep history will appear here.</p></div></article>
+        <p class="disclaimer">Sleep duration is only one part of sleep health. This app does not assess sleep disorders.</p>
+      </section>
+
+      <section class="page" id="page-activity">
+        <div class="page-intro"><div class="eyebrow">MOVEMENT & EXERCISE</div><h1>Activity<span class="green">.</span></h1><p class="muted">Keep a simple record of daily movement.</p></div>
+        <div class="activity-hero"><div><div class="eyebrow light">TODAY'S STEPS</div><div class="activity-number" id="activity-steps">—</div><p>Record a daily step total to start your activity history.</p></div><div class="activity-icon">⌁</div></div>
+        <article class="panel"><div class="panel-heading"><div><div class="eyebrow">DAILY LOG</div><h3>Activity history</h3></div><button class="primary-button small" data-open-log="steps">＋ Log steps</button></div><div id="activityEntries" class="empty-state compact"><div class="empty-icon">⌁</div><strong>No activity entries yet</strong><p>Your daily totals will appear here.</p></div></article>
+      </section>
+
+      <section class="page" id="page-profile">
+        <div class="page-intro"><div class="eyebrow">YOUR SPACE</div><h1>Profile<span class="green">.</span></h1><p class="muted">Preferences, privacy and app information.</p></div>
+        <article class="panel settings-panel"><div class="settings-row"><div class="settings-icon">◎</div><div><strong>Personal dashboard</strong><p>Your entries are stored in this browser on this device.</p></div></div><div class="settings-row"><div class="settings-icon">⌑</div><div><strong>Privacy first</strong><p>This prototype does not send your health entries to a server.</p></div></div><div class="settings-row"><div class="settings-icon">♥</div><div><strong>Health data connection</strong><p>Automatic Apple Health integration is not available in this Windows web prototype.</p></div></div><div class="settings-row"><div class="settings-icon">ⓘ</div><div><strong>About PULSE</strong><p>Independent wellness tracker prototype. Not a medical device.</p></div></div><button class="danger-button" id="clearData">Clear all my entries</button></article>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="logDialog" class="log-dialog">
+    <form method="dialog" id="logForm">
+      <div class="dialog-head"><div><div class="eyebrow">PERSONAL LOG</div><h2>Add a measurement</h2></div><button class="close-button" value="cancel" aria-label="Close">×</button></div>
+      <label>Measurement type<select id="entryType"><option value="hr">Heart rate (bpm)</option><option value="hrv">HRV (ms)</option><option value="sleep">Sleep duration (hours)</option><option value="steps">Steps (count)</option></select></label>
+      <label>Value<input id="entryValue" type="number" min="0" step="any" placeholder="Enter a value" required></label>
+      <label>Date<input id="entryDate" type="date" required></label>
+      <div class="form-error" id="formError"></div>
+      <div class="dialog-actions"><button type="button" class="outline-button" id="cancelLog">Cancel</button><button type="submit" class="primary-button">Save entry</button></div>
+      <p class="form-note">Only enter measurements from a device or source you trust. Don't guess values.</p>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
