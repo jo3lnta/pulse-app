@@ -120,6 +120,18 @@
         <p class="disclaimer">Blocking prevents future sign-ins. Existing sessions may remain valid until their access tokens expire. The master administrator account is protected from being blocked here.</p>
       </section>
 
+      <section class="page" id="page-admin">
+        <div class="page-intro"><div class="eyebrow">PULSE CONTROL CENTER</div><h1>Administration<span class="green">.</span></h1><p class="muted">Account access and platform activity. Personal health measurements are not shown here.</p></div>
+        <div class="admin-stats-grid">
+          <article class="metric-card"><div class="metric-top"><span>TOTAL ACCOUNTS</span><span class="metric-symbol green">◎</span></div><div class="metric-value" id="adminTotalUsers">—</div><div class="metric-foot">Created PULSE accounts</div></article>
+          <article class="metric-card"><div class="metric-top"><span>ACTIVE ACCESS</span><span class="metric-symbol green">●</span></div><div class="metric-value" id="adminActiveUsers">—</div><div class="metric-foot">Accounts able to sign in</div></article>
+          <article class="metric-card"><div class="metric-top"><span>BLOCKED</span><span class="metric-symbol pink">⊘</span></div><div class="metric-value" id="adminBlockedUsers">—</div><div class="metric-foot">Accounts with access restricted</div></article>
+          <article class="metric-card"><div class="metric-top"><span>RECORD COUNT</span><span class="metric-symbol blue">▤</span></div><div class="metric-value" id="adminTotalEntries">—</div><div class="metric-foot">Count only, no health values</div></article>
+        </div>
+        <article class="panel admin-panel"><div class="panel-heading"><div><div class="eyebrow">ACCOUNT DIRECTORY</div><h3>Registered users</h3><p class="muted" id="adminStatus">Loading account overview…</p></div><button class="outline-button" id="adminRefresh" type="button">↻ Refresh</button></div><div id="adminUsers" class="admin-user-list"><div class="admin-empty">Loading accounts…</div></div></article>
+        <p class="disclaimer">This panel shows account details and aggregate record counts only. It does not expose individual health measurements.</p>
+      </section>
+
       <section class="page" id="page-profile">
         <div class="page-intro"><div class="eyebrow">YOUR SPACE</div><h1>Profile<span class="green">.</span></h1><p class="muted">Preferences, privacy and app information.</p></div>
         <article class="panel settings-panel"><div class="settings-row"><div class="settings-icon">◎</div><div><strong>Personal dashboard</strong><p>Your entries are stored in this browser on this device.</p></div></div><div class="settings-row"><div class="settings-icon">⌑</div><div><strong>Privacy first</strong><p>This prototype does not send your health entries to a server.</p></div></div><div class="settings-row"><div class="settings-icon">♥</div><div><strong>Health data connection</strong><p>Automatic Apple Health integration is not available in this Windows web prototype.</p></div></div><div class="settings-row"><div class="settings-icon">ⓘ</div><div><strong>About PULSE</strong><p>Independent wellness tracker prototype. Not a medical device.</p></div></div><button class="danger-button" id="clearData">Clear all my entries</button></article>
