@@ -177,7 +177,18 @@ function render() {
   $("recovery-hrv").innerHTML = displayValue("hrv", "ms");
   const sleep = latest("sleep");
   const steps = entries.filter(e => e.type === "steps" && e.date === isoToday).sort((a, b) => b.createdAt - a.createdAt)[0];
-  $("sleep-last").innerHTML = sleep ? `${Number(sleep.value).toLocaleString("es-ES")} <small>hours</small>` : `— <small>hours</small>`;
+  $("sleep-last").innerHTML = sleep ? `${Number(sleep.value).toLocaleString("es-ES", { maximumFractionDigits: 1 })} <small>hours</small>` : `— <small>hours</small>`;
+  const sleepCutoff = new Date(today);
+  sleepCutoff.setDate(sleepCutoff.getDate() - 6);
+  const sleepCutoffISO = new Date(sleepCutoff.getTime() - sleepCutoff.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const sleepByDay = new Map();
+  entries.filter(e => e.type === "sleep" && e.date >= sleepCutoffISO && e.date <= isoToday)
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .forEach(e => sleepByDay.set(e.date, Number(e.value)));
+  const sleepWeek = [...sleepByDay.values()];
+  const sleepAverage = sleepWeek.length ? sleepWeek.reduce((sum, value) => sum + value, 0) / sleepWeek.length : null;
+  if ($("sleep-average")) $("sleep-average").innerHTML = sleepAverage == null ? "— <small>hours</small>" : `${sleepAverage.toLocaleString("es-ES", { maximumFractionDigits: 1 })} <small>hours</small>`;
+  if ($("sleep-nights")) $("sleep-nights").textContent = `${sleepWeek.length} / 7`;
   $("activity-steps").textContent = steps ? Number(steps.value).toLocaleString("es-ES") : "—";
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
   listInto("recentEntries", sorted.slice(0, 4), "No entries yet", "Add a measurement to start building your personal history.");
