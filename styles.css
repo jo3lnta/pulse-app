@@ -108,3 +108,15 @@
 @media(max-width:700px){.admin-user-row{align-items:flex-start;flex-direction:column}.admin-panel .panel-heading{align-items:flex-start;gap:10px}.admin-stats-grid{gap:9px}.admin-user-main strong{font-size:11px}}
 
 [data-admin-nav][hidden]{display:none!important}
+
+
+/* PULSE authentication: sign-up and recovery */
+.auth-form[hidden]{display:none!important}
+.auth-inline-link{border:0;background:transparent;color:var(--green);padding:0;font-size:10px;font-weight:700;text-align:left}
+.auth-inline-link:hover{text-decoration:underline}
+.auth-form> .auth-inline-link{display:block;margin:10px 0 0 auto}
+.auth-switch{font-size:10px;color:var(--muted);text-align:center;margin:17px 0 0}
+.auth-switch .auth-inline-link{margin-left:4px}
+.auth-form .login-message{min-height:22px}
+.auth-form input{margin-bottom:2px}
+@media(max-width:500px){.auth-form .login-submit{margin-top:18px}}
