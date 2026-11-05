@@ -292,10 +292,29 @@ let currentRole = "user";
 let syncQueue = Promise.resolve();
 
 function setLoginMessage(message, isError = true) {
-  const el = $("loginMessage");
+  setAuthMessage("loginMessage", message, isError);
+}
+function setAuthMessage(id, message, isError = true) {
+  const el = $(id);
   if (!el) return;
   el.textContent = message;
   el.classList.toggle("error", isError);
+}
+function showAuthView(view = "login") {
+  const forms = { login: "loginForm", signup: "signupForm", forgot: "forgotForm", reset: "resetPasswordForm" };
+  Object.entries(forms).forEach(([name, id]) => { if ($(id)) $(id).hidden = name !== view; });
+  const titles = {
+    login: ["Welcome back.", "Sign in to access your personal PULSE data and keep your devices in sync."],
+    signup: ["Create your account.", "Start your own private PULSE space. Your account begins with the free experience."],
+    forgot: ["Reset your password.", "We'll email you a secure link to choose a new password."],
+    reset: ["Choose a new password.", "Create a new password for your PULSE account."]
+  };
+  const [title, copy] = titles[view] || titles.login;
+  if ($("authTitle")) $("authTitle").innerHTML = title.replace(/\\.$/, '<span class="green">.</span>');
+  if ($("authCopy")) $("authCopy").textContent = copy;
+}
+function authRedirectUrl() {
+  return window.location.origin + window.location.pathname;
 }
 async function loadCurrentRole() {
   currentRole = "user";
@@ -358,22 +377,11 @@ function queueCloudSync() {
   });
   return syncQueue;
 }
-async function handleLogin(event) {
-  event.preventDefault();
-  if (!pulseClient) { setLoginMessage("Could not load the secure sign-in service. Check your connection."); return; }
-  const button = $("loginSubmit");
-  button.disabled = true; button.textContent = "Signing in…";
-  setLoginMessage("");
-  const { data, error } = await pulseClient.auth.signInWithPassword({
-    email: $("loginEmail").value.trim(), password: $("loginPassword").value
-  });
-  button.disabled = false; button.textContent = "Sign in";
-  if (error) { setLoginMessage("Sign-in failed. Check your email and password, or ask the account administrator."); return; }
-  currentUser = data.user;
+async function finishSignIn(user) {
+  currentUser = user;
   activateAccountData(currentUser);
   await loadCurrentRole();
   showAccountState(true);
-  setLoginMessage("");
   try {
     await syncCloudEntries();
     toast("PULSE synced securely.");
@@ -382,7 +390,109 @@ async function handleLogin(event) {
     if ($("syncStatus")) $("syncStatus").textContent = "SYNC ISSUE";
     toast("Signed in. Some records remain only on this device until sync succeeds.");
   }
+  if (currentRole === "admin") await loadAdminDashboard();
 }
+async function handleLogin(event) {
+  event.preventDefault();
+  if (!pulseClient) { setLoginMessage("The secure sign-in service did not load. Check your connection."); return; }
+  const button = $("loginSubmit");
+  button.disabled = true; button.textContent = "Signing in…";
+  setLoginMessage("");
+  try {
+    const { data, error } = await pulseClient.auth.signInWithPassword({
+      email: $("loginEmail").value.trim(), password: $("loginPassword").value
+    });
+    if (error) throw error;
+    await finishSignIn(data.user);
+  } catch (error) {
+    console.error("PULSE sign in:", error);
+    setLoginMessage("We couldn't sign you in. Check your email and password, and confirm your email address if you just registered.");
+  } finally {
+    button.disabled = false; button.textContent = "Sign in";
+  }
+}
+async function handleSignup(event) {
+  event.preventDefault();
+  const email = $("signupEmail").value.trim();
+  const password = $("signupPassword").value;
+  const confirmation = $("signupPasswordConfirm").value;
+  const button = $("signupSubmit");
+  if (password.length < 8) { setAuthMessage("signupMessage", "Use a password with at least 8 characters."); return; }
+  if (password !== confirmation) { setAuthMessage("signupMessage", "The passwords don't match."); return; }
+  if (!pulseClient) { setAuthMessage("signupMessage", "The secure sign-up service did not load. Check your connection."); return; }
+  button.disabled = true; button.textContent = "Creating account…";
+  setAuthMessage("signupMessage", "");
+  try {
+    const { data, error } = await pulseClient.auth.signUp({
+      email, password,
+      options: { emailRedirectTo: authRedirectUrl() }
+    });
+    if (error) throw error;
+    if (data.session && data.user) {
+      await finishSignIn(data.user);
+    } else {
+      setAuthMessage("signupMessage", "Account created. Check your inbox and confirm your email before signing in.", false);
+    }
+  } catch (error) {
+    console.error("PULSE sign up:", error);
+    setAuthMessage("signupMessage", error.message || "We couldn't create the account. Check the email and try again.");
+  } finally {
+    button.disabled = false; button.textContent = "Create account";
+  }
+}
+async function handleForgotPassword(event) {
+  event.preventDefault();
+  const email = $("forgotEmail").value.trim();
+  const button = $("forgotSubmit");
+  if (!pulseClient) { setAuthMessage("forgotMessage", "The recovery service did not load. Check your connection."); return; }
+  button.disabled = true; button.textContent = "Sending…";
+  setAuthMessage("forgotMessage", "");
+  try {
+    const { error } = await pulseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: authRedirectUrl()
+    });
+    if (error) throw error;
+    setAuthMessage("forgotMessage", "If an account exists for this email, a recovery link will arrive shortly. Open it on this device to choose a new password.", false);
+  } catch (error) {
+    console.error("PULSE password recovery:", error);
+    setAuthMessage("forgotMessage", error.message || "We couldn't send the recovery email. Please try again.");
+  } finally {
+    button.disabled = false; button.textContent = "Send recovery email";
+  }
+}
+async function handlePasswordUpdate(event) {
+  event.preventDefault();
+  const password = $("newPassword").value;
+  const confirmation = $("newPasswordConfirm").value;
+  const button = $("resetPasswordSubmit");
+  if (password.length < 8) { setAuthMessage("resetPasswordMessage", "Use a password with at least 8 characters."); return; }
+  if (password !== confirmation) { setAuthMessage("resetPasswordMessage", "The passwords don't match."); return; }
+  if (!pulseClient) { setAuthMessage("resetPasswordMessage", "The password service did not load. Check your connection."); return; }
+  button.disabled = true; button.textContent = "Saving…";
+  setAuthMessage("resetPasswordMessage", "");
+  try {
+    const { data, error } = await pulseClient.auth.updateUser({ password });
+    if (error) throw error;
+    setAuthMessage("resetPasswordMessage", "Password updated. Opening your PULSE account…", false);
+    if (data.user) await finishSignIn(data.user);
+  } catch (error) {
+    console.error("PULSE password update:", error);
+    setAuthMessage("resetPasswordMessage", error.message || "We couldn't update the password. Request a fresh recovery email and try again.");
+  } finally {
+    button.disabled = false; button.textContent = "Save new password";
+  }
+}
+$("loginForm")?.addEventListener("submit", handleLogin);
+$("signupForm")?.addEventListener("submit", handleSignup);
+$("forgotForm")?.addEventListener("submit", handleForgotPassword);
+$("resetPasswordForm")?.addEventListener("submit", handlePasswordUpdate);
+$("showSignup")?.addEventListener("click", () => showAuthView("signup"));
+$("showLoginFromSignup")?.addEventListener("click", () => showAuthView("login"));
+$("showForgot")?.addEventListener("click", () => {
+  if ($("forgotEmail") && $("loginEmail")) $("forgotEmail").value = $("loginEmail").value;
+  showAuthView("forgot");
+});
+$("showLoginFromForgot")?.addEventListener("click", () => showAuthView("login"));
 
 function escapeAdminText(value) {
   return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
@@ -432,23 +542,32 @@ async function handleLogout() {
 $("loginForm")?.addEventListener("submit", handleLogin);
 $("logoutButton")?.addEventListener("click", handleLogout);
 (async function initialisePulseAuth() {
+  showAuthView("login");
   if (!pulseClient) {
     setLoginMessage("The sign-in service did not load. Check your internet connection.");
     showAccountState(false); return;
   }
-  const { data, error } = await pulseClient.auth.getSession();
-  if (error || !data.session) { currentUser = null; showAccountState(false); return; }
-  currentUser = data.session.user;
-  activateAccountData(currentUser);
-  await loadCurrentRole();
-  showAccountState(true);
-  try { await syncCloudEntries(); }
-  catch (syncError) {
-    console.error("PULSE restore sync:", syncError);
-    if ($("syncStatus")) $("syncStatus").textContent = "SYNC ISSUE";
-  }
-  if (currentRole === "admin") await loadAdminDashboard();
   pulseClient.auth.onAuthStateChange((event, session) => {
-    if (event === "SIGNED_OUT") { currentUser = null; showAccountState(false); }
+    if (event === "PASSWORD_RECOVERY") {
+      showAccountState(false);
+      showAuthView("reset");
+      setAuthMessage("resetPasswordMessage", "Choose a new password for your account.", false);
+    }
+    if (event === "SIGNED_OUT") {
+      currentUser = null;
+      currentRole = "user";
+      showAccountState(false);
+      showAuthView("login");
+    }
   });
+  const { data, error } = await pulseClient.auth.getSession();
+  const isRecoveryLink = window.location.hash.includes("type=recovery");
+  if (isRecoveryLink) {
+    showAccountState(false);
+    showAuthView("reset");
+    setAuthMessage("resetPasswordMessage", "Choose a new password for your account.", false);
+    return;
+  }
+  if (error || !data.session) { currentUser = null; showAccountState(false); return; }
+  await finishSignIn(data.session.user);
 })();
