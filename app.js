@@ -12,6 +12,7 @@ function activateAccountData(user) {
   } catch { entries = []; }
 }
 const $ = (id) => document.getElementById(id);
+function pulseDateLocale() { return ({ en: "en-GB", es: "es-ES", fr: "fr-FR", de: "de-DE" })[localStorage.getItem("pulse.language.v1") || "en"] || "en-GB"; }
 const today = new Date();
 const isoToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 let entries = loadEntries();
@@ -26,10 +27,10 @@ function saveEntries() {
   if (currentUser) queueCloudSync();
 }
 function fmtDate(value) {
-  return new Date(value + "T12:00:00").toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(value + "T12:00:00").toLocaleDateString(pulseDateLocale(), { day: "numeric", month: "short", year: "numeric" });
 }
 function shortDate(value) {
-  return new Date(value + "T12:00:00").toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+  return new Date(value + "T12:00:00").toLocaleDateString(pulseDateLocale(), { day: "numeric", month: "short" });
 }
 function latest(type) {
   return entries.filter(e => e.type === type).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)[0];
@@ -90,7 +91,7 @@ function recoveryEstimate() {
 
 function displayValue(type, suffix) {
   const e = latest(type);
-  return e ? `${Number(e.value).toLocaleString("es-ES", { maximumFractionDigits: 1 })} <small>${suffix}</small>` : `— <small>${suffix}</small>`;
+  return e ? `${Number(e.value).toLocaleString(pulseDateLocale(), { maximumFractionDigits: 1 })} <small>${suffix}</small>` : `— <small>${suffix}</small>`;
 }
 
 // Small, dependency-free chart styles. The existing PULSE theme is preserved.
@@ -123,8 +124,8 @@ function showPage(page) {
 }
 document.querySelectorAll("[data-page]").forEach(b => b.addEventListener("click", () => showPage(b.dataset.page)));
 document.querySelectorAll("[data-goto]").forEach(b => b.addEventListener("click", () => showPage(b.dataset.goto)));
-if ($("todayLabel")) $("todayLabel").textContent = today.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
-if ($("dateButton")) $("dateButton").title = today.toLocaleDateString("es-ES");
+if ($("todayLabel")) $("todayLabel").textContent = today.toLocaleDateString(pulseDateLocale(), { weekday: "long", day: "numeric", month: "long" });
+if ($("dateButton")) $("dateButton").title = today.toLocaleDateString(pulseDateLocale());
 
 function updateSleepFields() {
   const visible = $("entryType").value === "sleep";
@@ -177,7 +178,7 @@ function row(e) {
   const labels = { hr: "Heart rate", hrv: "HRV", sleep: "Sleep", steps: "Steps" };
   const units = { hr: "bpm", hrv: "ms", sleep: "h", steps: "steps" };
   const sleepTimes = e.type === "sleep" && e.bedtime && e.wakeTime ? `<br>Bed ${e.bedtime} · Wake ${e.wakeTime}` : "";
-  return `<div class="entry-row"><div><strong>${labels[e.type]}</strong><small>${fmtDate(e.date)}${sleepTimes}</small></div><div class="entry-value">${Number(e.value).toLocaleString("es-ES", { maximumFractionDigits: 1 })} ${units[e.type]}</div></div>`;
+  return `<div class="entry-row"><div><strong>${labels[e.type]}</strong><small>${fmtDate(e.date)}${sleepTimes}</small></div><div class="entry-value">${Number(e.value).toLocaleString(pulseDateLocale(), { maximumFractionDigits: 1 })} ${units[e.type]}</div></div>`;
 }
 function listInto(id, arr, emptyTitle, emptyText) {
   const el = $(id);
@@ -196,9 +197,9 @@ function chartCard(title, unit, source, accent) {
   const x = i => data.length === 1 ? 150 : 12 + (i * 276 / (data.length - 1));
   const y = v => 88 - ((v - low) / (high - low)) * 68;
   const points = data.map((e, i) => `${x(i)},${y(Number(e.value))}`).join(" ");
-  const dots = data.map((e, i) => `<circle cx="${x(i)}" cy="${y(Number(e.value))}" r="3.5" fill="${accent}" stroke="#0d1511" stroke-width="2"><title>${shortDate(e.date)}: ${Number(e.value).toLocaleString("es-ES")} ${unit}</title></circle>`).join("");
+  const dots = data.map((e, i) => `<circle cx="${x(i)}" cy="${y(Number(e.value))}" r="3.5" fill="${accent}" stroke="#0d1511" stroke-width="2"><title>${shortDate(e.date)}: ${Number(e.value).toLocaleString(pulseDateLocale())} ${unit}</title></circle>`).join("");
   const last = data[data.length - 1];
-  return `<div class="pulse-chart-card"><div class="pulse-chart-title">${title}</div><div class="pulse-chart-current">${Number(last.value).toLocaleString("es-ES", { maximumFractionDigits: 1 })} <small>${unit}</small></div><svg class="pulse-chart-svg" viewBox="0 0 300 100" role="img" aria-label="${title}, last ${data.length} entries"><line x1="8" y1="20" x2="292" y2="20" stroke="#26372d"/><line x1="8" y1="54" x2="292" y2="54" stroke="#26372d"/><line x1="8" y1="88" x2="292" y2="88" stroke="#26372d"/><polyline points="${points}" fill="none" stroke="${accent}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}</svg><div class="pulse-chart-labels"><span>${shortDate(data[0].date)}</span><span>${shortDate(last.date)}</span></div></div>`;
+  return `<div class="pulse-chart-card"><div class="pulse-chart-title">${title}</div><div class="pulse-chart-current">${Number(last.value).toLocaleString(pulseDateLocale(), { maximumFractionDigits: 1 })} <small>${unit}</small></div><svg class="pulse-chart-svg" viewBox="0 0 300 100" role="img" aria-label="${title}, last ${data.length} entries"><line x1="8" y1="20" x2="292" y2="20" stroke="#26372d"/><line x1="8" y1="54" x2="292" y2="54" stroke="#26372d"/><line x1="8" y1="88" x2="292" y2="88" stroke="#26372d"/><polyline points="${points}" fill="none" stroke="${accent}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}</svg><div class="pulse-chart-labels"><span>${shortDate(data[0].date)}</span><span>${shortDate(last.date)}</span></div></div>`;
 }
 function chartsInto(id, types) {
   const el = $(id); if (!el) return;
@@ -226,7 +227,7 @@ function render() {
   $("recovery-hrv").innerHTML = displayValue("hrv", "ms");
   const sleep = latest("sleep");
   const steps = entries.filter(e => e.type === "steps" && e.date === isoToday).sort((a, b) => b.createdAt - a.createdAt)[0];
-  $("sleep-last").innerHTML = sleep ? `${Number(sleep.value).toLocaleString("es-ES", { maximumFractionDigits: 1 })} <small>hours</small>` : `— <small>hours</small>`;
+  $("sleep-last").innerHTML = sleep ? `${Number(sleep.value).toLocaleString(pulseDateLocale(), { maximumFractionDigits: 1 })} <small>hours</small>` : `— <small>hours</small>`;
   const sleepCutoff = new Date(today);
   sleepCutoff.setDate(sleepCutoff.getDate() - 6);
   const sleepCutoffISO = new Date(sleepCutoff.getTime() - sleepCutoff.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
@@ -236,7 +237,7 @@ function render() {
     .forEach(e => sleepByDay.set(e.date, Number(e.value)));
   const sleepWeek = [...sleepByDay.values()];
   const sleepAverage = sleepWeek.length ? sleepWeek.reduce((sum, value) => sum + value, 0) / sleepWeek.length : null;
-  if ($("sleep-average")) $("sleep-average").innerHTML = sleepAverage == null ? "— <small>hours</small>" : `${sleepAverage.toLocaleString("es-ES", { maximumFractionDigits: 1 })} <small>hours</small>`;
+  if ($("sleep-average")) $("sleep-average").innerHTML = sleepAverage == null ? "— <small>hours</small>" : `${sleepAverage.toLocaleString(pulseDateLocale(), { maximumFractionDigits: 1 })} <small>hours</small>`;
   if ($("sleep-nights")) $("sleep-nights").textContent = `${sleepWeek.length} / 7`;
   const regularity = sleepRegularity();
   if ($("sleep-regularity")) $("sleep-regularity").innerHTML = regularity.value == null ? "— <small>min</small>" : `±${regularity.value} <small>min</small>`;
@@ -245,7 +246,7 @@ function render() {
   if ($("sleep-regularity-note")) $("sleep-regularity-note").textContent = regularity.value == null
     ? `Add bedtime and wake time for at least 3 nights in the last 14 days (${regularity.count}/3 so far).`
     : `Average variation from your usual bedtime and wake time, based on ${regularity.count} nights in the last 14 days.`;
-  $("activity-steps").textContent = steps ? Number(steps.value).toLocaleString("es-ES") : "—";
+  $("activity-steps").textContent = steps ? Number(steps.value).toLocaleString(pulseDateLocale()) : "—";
   const weekStart=new Date(today); weekStart.setDate(weekStart.getDate()-6);
   const weekStartISO=new Date(weekStart.getTime()-weekStart.getTimezoneOffset()*60000).toISOString().slice(0,10);
   const dailyByType=type=>{const map=new Map();entries.filter(e=>e.type===type&&e.date>=weekStartISO&&e.date<=isoToday).sort((a,b)=>a.createdAt-b.createdAt).forEach(e=>map.set(e.date,Number(e.value)));return [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));};
@@ -500,7 +501,7 @@ function escapeAdminText(value) {
 function formatAdminDate(value) {
   if (!value) return "Never";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString(pulseDateLocale(), { day: "numeric", month: "short", year: "numeric" });
 }
 async function loadAdminDashboard() {
   if (currentRole !== "admin" || !currentUser) return;
