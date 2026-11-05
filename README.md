@@ -25,16 +25,4 @@ No installation, account, server, or subscription is required.
 2. Add data export/import so entries can be moved between devices.
 3. Later, connect supported health sources. Native Apple HealthKit access requires an iOS app and Apple's platform tooling; this Windows prototype cannot access it directly.
 
-
-## Install on iPhone (PWA)
-The project now includes a web app manifest, PULSE icons, and an offline cache. To install it on an iPhone, the site must be published over HTTPS (opening `index.html` directly is not enough).
-
-1. Publish the contents of this folder to an HTTPS static host (for example, GitHub Pages or Netlify).
-2. Open the published HTTPS address in Safari on the iPhone.
-3. Tap Share → Add to Home Screen → Add.
-4. Launch PULSE from its new Home Screen icon.
-
-The app shell can then open offline after it has loaded once online. The manual entries remain stored in that browser on that device; they do not automatically sync between the PC and iPhone.
-
-## Note
 This PWA still cannot read Apple Health / HealthKit directly. That requires a native iOS app and a separate integration phase.
