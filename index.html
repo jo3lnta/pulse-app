@@ -203,6 +203,45 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="app.js"></script>
   <script>
+(() => {
+  const key="pulse.language.v1";
+  const dict={
+    en:{eyebrow:"YOUR PERSONAL HEALTH SPACE",privacy:"Your records are private to your account.",views:{login:["Welcome back.","Sign in to access your personal PULSE data and keep your devices in sync."],signup:["Create your account.","Start your own private PULSE space. Your account begins with the free experience."],forgot:["Reset your password.","We'll email you a secure link to choose a new password."],reset:["Choose a new password.","Create a new password for your PULSE account."]},email:"Email",password:"Password",confirm:"Confirm password",accountEmail:"Account email",newPassword:"New password",confirmNew:"Confirm new password",forgot:"Forgot your password?",signIn:"Sign in",create:"Create an account",createAccount:"Create account",newToPulse:"New to PULSE?",already:"Already have an account?",send:"Send recovery email",back:"Back to sign in",save:"Save new password",emailPlaceholder:"Your account email",passwordPlaceholder:"Your password",min:"At least 8 characters",repeat:"Repeat your password",repeatNew:"Repeat your new password"},
+    es:{eyebrow:"TU ESPACIO PERSONAL DE SALUD",privacy:"Tus datos son privados y solo tú puedes acceder a ellos.",views:{login:["Qué bueno verte de nuevo.","Inicia sesión para consultar tus datos de PULSE y mantener tus dispositivos sincronizados."],signup:["Crea tu cuenta.","Empieza tu espacio privado en PULSE. Tu cuenta comienza con la experiencia gratuita."],forgot:["Restablecer contraseña.","Te enviaremos un enlace seguro para crear una contraseña nueva."],reset:["Elige una contraseña nueva.","Crea una contraseña nueva para tu cuenta de PULSE."]},email:"Correo electrónico",password:"Contraseña",confirm:"Confirmar contraseña",accountEmail:"Correo de tu cuenta",newPassword:"Nueva contraseña",confirmNew:"Confirmar nueva contraseña",forgot:"¿Has olvidado tu contraseña?",signIn:"Iniciar sesión",create:"Crear una cuenta",createAccount:"Crear cuenta",newToPulse:"¿Nuevo en PULSE?",already:"¿Ya tienes una cuenta?",send:"Enviar correo de recuperación",back:"Volver a iniciar sesión",save:"Guardar nueva contraseña",emailPlaceholder:"Tu correo electrónico",passwordPlaceholder:"Tu contraseña",min:"Mínimo 8 caracteres",repeat:"Repite tu contraseña",repeatNew:"Repite la contraseña nueva"},
+    fr:{eyebrow:"VOTRE ESPACE SANTÉ PERSONNEL",privacy:"Vos données restent privées et liées à votre compte.",views:{login:["Heureux de vous revoir.","Connectez-vous pour retrouver vos données PULSE et synchroniser vos appareils."],signup:["Créez votre compte.","Créez votre espace PULSE privé. Votre compte commence avec l'offre gratuite."],forgot:["Réinitialiser le mot de passe.","Nous vous enverrons un lien sécurisé pour choisir un nouveau mot de passe."],reset:["Choisissez un nouveau mot de passe.","Créez un nouveau mot de passe pour votre compte PULSE."]},email:"E-mail",password:"Mot de passe",confirm:"Confirmer le mot de passe",accountEmail:"E-mail du compte",newPassword:"Nouveau mot de passe",confirmNew:"Confirmer le nouveau mot de passe",forgot:"Mot de passe oublié ?",signIn:"Se connecter",create:"Créer un compte",createAccount:"Créer un compte",newToPulse:"Nouveau sur PULSE ?",already:"Vous avez déjà un compte ?",send:"Envoyer l'e-mail de récupération",back:"Retour à la connexion",save:"Enregistrer le nouveau mot de passe",emailPlaceholder:"Votre adresse e-mail",passwordPlaceholder:"Votre mot de passe",min:"8 caractères minimum",repeat:"Répétez votre mot de passe",repeatNew:"Répétez le nouveau mot de passe"},
+    de:{eyebrow:"DEIN PERSÖNLICHER GESUNDHEITSBEREICH",privacy:"Deine Daten sind privat und mit deinem Konto verknüpft.",views:{login:["Schön, dass du wieder da bist.","Melde dich an, um auf deine PULSE-Daten zuzugreifen und deine Geräte zu synchronisieren."],signup:["Konto erstellen.","Richte deinen privaten PULSE-Bereich ein. Dein Konto startet mit dem kostenlosen Angebot."],forgot:["Passwort zurücksetzen.","Wir senden dir einen sicheren Link, über den du ein neues Passwort festlegen kannst."],reset:["Neues Passwort festlegen.","Erstelle ein neues Passwort für dein PULSE-Konto."]},email:"E-Mail",password:"Passwort",confirm:"Passwort bestätigen",accountEmail:"Konto-E-Mail",newPassword:"Neues Passwort",confirmNew:"Neues Passwort bestätigen",forgot:"Passwort vergessen?",signIn:"Anmelden",create:"Konto erstellen",createAccount:"Konto erstellen",newToPulse:"Neu bei PULSE?",already:"Du hast bereits ein Konto?",send:"Wiederherstellungs-E-Mail senden",back:"Zurück zur Anmeldung",save:"Neues Passwort speichern",emailPlaceholder:"Deine E-Mail-Adresse",passwordPlaceholder:"Dein Passwort",min:"Mindestens 8 Zeichen",repeat:"Passwort wiederholen",repeatNew:"Neues Passwort wiederholen"}
+  };
+  const $=id=>document.getElementById(id);
+  const lang=()=>dict[localStorage.getItem(key)||"en"]?localStorage.getItem(key)||"en":"en";
+  const original=window.showAuthView;
+  window.showAuthView=function(view="login"){
+    const forms={login:"loginForm",signup:"signupForm",forgot:"forgotForm",reset:"resetPasswordForm"};
+    Object.entries(forms).forEach(([name,id])=>{if($(id))$(id).hidden=name!==view;});
+    const [title,copy]=dict[lang()].views[view]||dict[lang()].views.login;
+    if($("authTitle"))$("authTitle").innerHTML=title.endsWith(".")?title.slice(0,-1)+'<span class="green">.</span>':title;
+    if($("authCopy"))$("authCopy").textContent=copy;
+  };
+  function apply(value){
+    const l=dict[value]?value:"en",t=dict[l];localStorage.setItem(key,l);document.documentElement.lang=l;
+    const put=(id,v)=>{if($(id))$(id).textContent=v;};
+    put("authEyebrow",t.eyebrow);put("authPrivacy",t.privacy);
+    ["loginEmailLabel","signupEmailLabel"].forEach(id=>put(id,t.email));
+    put("loginPasswordLabel",t.password);put("signupPasswordLabel",t.password);put("signupConfirmLabel",t.confirm);
+    put("forgotEmailLabel",t.accountEmail);put("newPasswordLabel",t.newPassword);put("newPasswordConfirmLabel",t.confirmNew);
+    put("showForgot",t.forgot);put("loginSubmit",t.signIn);put("showSignup",t.create);put("loginSwitchText",t.newToPulse);
+    put("signupSubmit",t.createAccount);put("signupSwitchText",t.already);put("showLoginFromSignup",t.signIn);
+    put("forgotSubmit",t.send);put("showLoginFromForgot",t.back);put("resetPasswordSubmit",t.save);
+    const ph={loginEmail:t.emailPlaceholder,loginPassword:t.passwordPlaceholder,signupEmail:t.emailPlaceholder,signupPassword:t.min,signupPasswordConfirm:t.repeat,forgotEmail:t.emailPlaceholder,newPassword:t.min,newPasswordConfirm:t.repeatNew};
+    Object.entries(ph).forEach(([id,v])=>{if($(id))$(id).placeholder=v;});
+    window.showAuthView(window.__pulseAuthView||"login");
+  }
+  const picker=$("authLanguage");
+  if(picker){picker.value=lang();picker.addEventListener("change",()=>apply(picker.value));}
+  apply(lang());
+})();
+</script>
+
+  <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').then(registration => registration.update()).catch(() => {}));
     }
