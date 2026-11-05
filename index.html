@@ -233,7 +233,8 @@
     put("forgotSubmit",t.send);put("showLoginFromForgot",t.back);put("resetPasswordSubmit",t.save);
     const ph={loginEmail:t.emailPlaceholder,loginPassword:t.passwordPlaceholder,signupEmail:t.emailPlaceholder,signupPassword:t.min,signupPasswordConfirm:t.repeat,forgotEmail:t.emailPlaceholder,newPassword:t.min,newPasswordConfirm:t.repeatNew};
     Object.entries(ph).forEach(([id,v])=>{if($(id))$(id).placeholder=v;});
-    window.showAuthView(window.__pulseAuthView||"login");
+    const activeView = Object.entries({login:"loginForm",signup:"signupForm",forgot:"forgotForm",reset:"resetPasswordForm"}).find(([, id]) => $(id) && !$(id).hidden)?.[0];
+    window.showAuthView(window.__pulseAuthView || activeView || "login");
   }
   const picker=$("authLanguage");
   if(picker){picker.value=lang();picker.addEventListener("change",()=>apply(picker.value));}
