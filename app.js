@@ -310,7 +310,7 @@ function showAuthView(view = "login") {
     reset: ["Choose a new password.", "Create a new password for your PULSE account."]
   };
   const [title, copy] = titles[view] || titles.login;
-  if ($("authTitle")) $("authTitle").innerHTML = title.replace(/\\.$/, '<span class="green">.</span>');
+  if ($("authTitle")) $("authTitle").innerHTML = title.endsWith(".") ? title.slice(0, -1) + '<span class="green">.</span>' : title;
   if ($("authCopy")) $("authCopy").textContent = copy;
 }
 function authRedirectUrl() {
