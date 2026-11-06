@@ -1,7 +1,7 @@
 name: Verify PULSE
 on:
   push:
-    branches: [main, codex/apple-health-auto-log]
+    branches: [main, codex/apple-health-auto-log, codex/web-release]
   pull_request:
   workflow_dispatch:
 concurrency:
