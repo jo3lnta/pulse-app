@@ -1,28 +1,23 @@
-# PULSE WebApp — Windows starter
+# PULSE — personal health dashboard
 
-## Run it
-1. Download and extract `PULSE-WebApp.zip`.
-2. Open the extracted folder.
-3. Double-click `index.html` to launch it in Chrome or Edge.
+PULSE is a static web app with Supabase email/password accounts, private measurement history and daily Apple Health imports. Open https://jo3lnta.github.io/pulse-app/ or install it with Safari > Share > Add to Home Screen on iPhone. This web installation is separate from an App Store download.
 
-No installation, account, server, or subscription is required.
+## Health sync
 
-## What works
-- Responsive WHOOP-inspired dark dashboard.
-- Overview, Recovery, Sleep, Activity, and Profile sections.
-- Add manual heart-rate, HRV, sleep-duration, and step-count entries.
-- Entries are saved locally in the browser using localStorage.
-- Clear all locally stored entries from Profile.
+In Profile, create a revocable connection key and follow [the Apple Shortcuts guide](docs/apple-health.html). Daily submissions update by metric/date without duplicates. Manual entries remain separate. The dashboard refreshes on sign-in, when returning to the tab and every minute while visible. Health migration `health_shortcuts` has been applied to the live Supabase project, version `20261106150739`.
 
-## Important limitations
-- This is a browser prototype. It does not read sensors from a Windows PC or iPhone.
-- Do not enter guessed measurements. PULSE intentionally does not generate a recovery score from missing data.
-- Health data stays in this browser profile; clearing browser site data may remove it.
-- No medical diagnosis or training-readiness advice is provided.
+## Authentication and email
 
-## Next development steps
-1. Add validated charts for logged measurements.
-2. Add data export/import so entries can be moved between devices.
-3. Later, connect supported health sources. Native Apple HealthKit access requires an iOS app and Apple's platform tooling; this Windows prototype cannot access it directly.
+The reported `email rate limit exceeded` failure was confirmed in Auth logs. Public sign-up and password recovery still require production SMTP and a verified sender; see [email configuration](docs/auth-setup.html). Email confirmation has not been disabled. Client fixes clarify quota/credential errors, keep password recovery state, and open a successful session independently of data sync failures.
 
-This PWA still cannot read Apple Health / HealthKit directly. That requires a native iOS app and a separate integration phase.
+The deployed `pulse-delete-account` endpoint allows each signed-in user to delete only their own account after confirmation. It verifies the user and revokes sessions before permanent deletion. Deployment did not delete any existing account.
+
+## Native iPhone app
+
+A SwiftUI/HealthKit app and release instructions are prepared in [the native app review branch](https://github.com/jo3lnta/pulse-app/tree/codex/apple-health-auto-log/ios). It is not yet published in the App Store. Apple Developer enrollment, signing, production SMTP, real device tests and Apple review remain necessary.
+
+## Validation
+
+Run `node tests/auth.test.cjs`, `node tests/health-sync.test.cjs`, `node tests/delete-account.test.mjs`. The live smoke test (`node tests/live-auth-smoke.mjs`) checks Auth reachability and anonymous deletion rejection without creating accounts, sending emails or deleting data. GitHub Actions also applies the Health migration and tests it on a disposable PostgreSQL database.
+
+Publish the repository root. `PULSE-WebApp/` is a legacy snapshot.
