@@ -113,6 +113,7 @@ struct AddMeasurementView: View {
 struct SettingsView: View {
     @EnvironmentObject var model: PulseModel
     @State private var consenting = false
+    @State private var deleting = false
     var body: some View {
         NavigationStack {
             Form {
@@ -129,13 +130,17 @@ struct SettingsView: View {
                 Section {
                     Link("Política de privacidad",destination:PulseAPI.website.appendingPathComponent("docs/privacy.html"))
                     Link("Soporte",destination:PulseAPI.website.appendingPathComponent("docs/support.html"))
-                    Text("La eliminación de cuentas desde la app todavía no está disponible.").font(.footnote).foregroundStyle(.secondary)
+                    Button("Eliminar mi cuenta y mis datos",role:.destructive) { deleting = true }.disabled(model.busy)
                 }
             }.navigationTitle("Perfil")
                 .alert("¿Conectar Apple Salud?",isPresented:$consenting) {
                     Button("Cancelar",role:.cancel) { }
                     Button("Continuar") { Task { await model.connectHealth() } }
                 } message: { Text("Se enviarán las mediciones autorizadas a tu cuenta PULSE en Supabase. Elige después los permisos en la pantalla de Salud.") }
+                .alert("¿Eliminar tu cuenta?",isPresented:$deleting) {
+                    Button("Cancelar",role:.cancel) { }
+                    Button("Eliminar definitivamente",role:.destructive) { Task { await model.deleteAccount() } }
+                } message: { Text("Se borrarán tu cuenta y las mediciones de PULSE. No se borrarán los datos originales de Apple Salud. Esta acción no se puede deshacer.") }
         }
     }
 }

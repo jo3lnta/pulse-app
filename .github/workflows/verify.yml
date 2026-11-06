@@ -19,6 +19,7 @@ jobs:
           node-version: '24'
       - run: node --check app.js && node --check auth-errors.js && node --check health-sync.js && node --check service-worker.js
       - run: node tests/auth.test.cjs && node tests/health-sync.test.cjs && node tests/delete-account.test.mjs
+      - run: node tests/live-auth-smoke.mjs
   database:
     runs-on: ubuntu-latest
     services:
