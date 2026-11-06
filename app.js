@@ -178,7 +178,7 @@ function row(e) {
   const labels = { hr: "Heart rate", hrv: "HRV", sleep: "Sleep", steps: "Steps" };
   const units = { hr: "bpm", hrv: "ms", sleep: "h", steps: "steps" };
   const sleepTimes = e.type === "sleep" && e.bedtime && e.wakeTime ? `<br>Bed ${e.bedtime} · Wake ${e.wakeTime}` : "";
-  return `<div class="entry-row"><div><strong>${labels[e.type]}</strong><small>${fmtDate(e.date)}${sleepTimes}</small></div><div class="entry-value">${Number(e.value).toLocaleString(pulseDateLocale(), { maximumFractionDigits: 1 })} ${units[e.type]}</div></div>`;
+  return `<div class="entry-row"><div><strong>${labels[e.type]}</strong><small>${fmtDate(e.date)}${e.source === "apple-health" ? " · Apple Health" : ""}${sleepTimes}</small></div><div class="entry-value">${Number(e.value).toLocaleString(pulseDateLocale(), { maximumFractionDigits: 1 })} ${units[e.type]}</div></div>`;
 }
 function listInto(id, arr, emptyTitle, emptyText) {
   const el = $(id);
@@ -355,7 +355,7 @@ function fromCloudRow(row) {
 }
 async function syncCloudEntries() {
   if (!pulseClient || !currentUser) return;
-  const localRows = entries.map(entry => toCloudRow(entry, currentUser.id));
+  const localRows = entries.filter(entry => entry.source !== "apple-health").map(entry => toCloudRow(entry, currentUser.id));
   localStorage.setItem(accountStoreKey(currentUser.id), JSON.stringify(entries));
   if (localRows.length) {
     const { error: uploadError } = await pulseClient.from("entries").upsert(localRows, { onConflict: "id" });
@@ -382,9 +382,11 @@ async function finishSignIn(user) {
   currentUser = user;
   activateAccountData(currentUser);
   await loadCurrentRole();
+  await refreshHealthStatus();
   showAccountState(true);
   try {
     await syncCloudEntries();
+    await syncHealthEntries();
     toast("PULSE synced securely.");
   } catch (syncError) {
     console.error("PULSE initial sync:", syncError);
@@ -534,6 +536,7 @@ $("adminRefresh")?.addEventListener("click", loadAdminDashboard);
 async function handleLogout() {
   if (!pulseClient) return;
   await pulseClient.auth.signOut();
+  clearHealthSecret();
   currentUser = null;
   currentRole = "user";
   entries = [];
@@ -555,6 +558,7 @@ $("logoutButton")?.addEventListener("click", handleLogout);
       setAuthMessage("resetPasswordMessage", "Choose a new password for your account.", false);
     }
     if (event === "SIGNED_OUT") {
+      clearHealthSecret();
       currentUser = null;
       currentRole = "user";
       showAccountState(false);
@@ -572,3 +576,4 @@ $("logoutButton")?.addEventListener("click", handleLogout);
   if (error || !data.session) { currentUser = null; showAccountState(false); return; }
   await finishSignIn(data.session.user);
 })();
+
