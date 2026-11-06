@@ -54,7 +54,7 @@ jobs:
       - run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/202611060001_health_shortcuts.sql
       - run: psql -v ON_ERROR_STOP=1 -f tests/health-sync.sql
   ios:
-    runs-on: macos-15
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Validate project
