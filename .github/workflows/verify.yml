@@ -1,0 +1,65 @@
+name: Verify PULSE
+on:
+  push:
+    branches: [main, codex/apple-health-auto-log]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --check app.js && node --check auth-errors.js && node --check health-sync.js && node --check service-worker.js
+      - run: node tests/auth.test.cjs && node tests/health-sync.test.cjs && node tests/delete-account.test.mjs
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ephemeral-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: ephemeral-test-only
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create disposable Auth test schema
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          create role anon;
+          create role authenticated;
+          create schema auth;
+          create table auth.users(id uuid primary key);
+          create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+          grant usage on schema auth to anon, authenticated;
+          grant execute on function auth.uid() to anon, authenticated;
+          SQL
+      - run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/202611060001_health_shortcuts.sql
+      - run: psql -v ON_ERROR_STOP=1 -f tests/health-sync.sql
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate project
+        run: |
+          python3 ios/generate-project.py
+          plutil -lint ios/Pulse.xcodeproj/project.pbxproj ios/Pulse/Info.plist ios/Pulse/PrivacyInfo.xcprivacy
+      - name: Build iPhone app without signing
+        run: xcodebuild -project ios/Pulse.xcodeproj -scheme Pulse -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
+      - name: Test sleep interval aggregation on simulator
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for group in d["devices"].values() for v in group if v["name"].startswith("iPhone")))')
+          xcodebuild -project ios/Pulse.xcodeproj -scheme Pulse -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_ID" CODE_SIGNING_ALLOWED=NO test

@@ -5,7 +5,7 @@ insert into auth.users(id) values
  ('10000000-0000-4000-8000-000000000002');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
-select set_config('test.health_token',public.health_connect(),true);
+do $$ begin perform set_config('test.health_token',public.health_connect(),true); end $$;
 set local role anon;
 select public.health_ingest(current_setting('test.health_token'), jsonb_build_array(
  jsonb_build_object('type','steps','date',current_date,'value',100)));

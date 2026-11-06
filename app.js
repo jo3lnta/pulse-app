@@ -291,6 +291,9 @@ const pulseClient = window.supabase?.createClient(PULSE_SUPABASE_URL, PULSE_SUPA
 let currentUser = null;
 let currentRole = "user";
 let syncQueue = Promise.resolve();
+let authRecoveryActive = new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery";
+let finishingUserId = null;
+let finishPromise = null;
 
 function setLoginMessage(message, isError = true) {
   setAuthMessage("loginMessage", message, isError);
@@ -315,13 +318,14 @@ function showAuthView(view = "login") {
   if ($("authCopy")) $("authCopy").textContent = copy;
 }
 function authRedirectUrl() {
-  return window.location.origin + window.location.pathname;
+  return "https://jo3lnta.github.io/pulse-app/";
 }
 async function loadCurrentRole() {
   currentRole = "user";
   if (!pulseClient || !currentUser) return;
-  const { data, error } = await pulseClient.from("user_roles").select("role").eq("user_id", currentUser.id).maybeSingle();
-  if (!error && data?.role === "admin") currentRole = "admin";
+  const userId = currentUser.id;
+  const { data, error } = await pulseClient.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
+  if (currentUser?.id === userId && !error && data?.role === "admin") currentRole = "admin";
 }
 function showAccountState(signedIn) {
   const roleEl = $("accountRole");
@@ -355,13 +359,16 @@ function fromCloudRow(row) {
 }
 async function syncCloudEntries() {
   if (!pulseClient || !currentUser) return;
-  const localRows = entries.filter(entry => entry.source !== "apple-health").map(entry => toCloudRow(entry, currentUser.id));
-  localStorage.setItem(accountStoreKey(currentUser.id), JSON.stringify(entries));
+  const userId = currentUser.id;
+  const localRows = entries.filter(entry => entry.source !== "apple-health").map(entry => toCloudRow(entry, userId));
+  localStorage.setItem(accountStoreKey(userId), JSON.stringify(entries));
   if (localRows.length) {
     const { error: uploadError } = await pulseClient.from("entries").upsert(localRows, { onConflict: "id" });
     if (uploadError) throw uploadError;
   }
-  const { data, error } = await pulseClient.from("entries").select("id,type,value,date,created_at,bedtime,wake_time").eq("user_id", currentUser.id);
+  if (currentUser?.id !== userId) return;
+  const { data, error } = await pulseClient.from("entries").select("id,type,value,date,created_at,bedtime,wake_time").eq("user_id", userId);
+  if (currentUser?.id !== userId) return;
   if (error) throw error;
   const merged = new Map(entries.map(entry => [entry.id, entry]));
   (data || []).forEach(row => { const entry = fromCloudRow(row); if (!merged.has(entry.id)) merged.set(entry.id, entry); });
@@ -379,26 +386,37 @@ function queueCloudSync() {
   return syncQueue;
 }
 async function finishSignIn(user) {
-  currentUser = user;
-  activateAccountData(currentUser);
-  await loadCurrentRole();
-  await refreshHealthStatus();
-  showAccountState(true);
-  try {
-    await syncCloudEntries();
-    await syncHealthEntries();
-    toast("PULSE synced securely.");
-  } catch (syncError) {
-    console.error("PULSE initial sync:", syncError);
-    if ($("syncStatus")) $("syncStatus").textContent = "SYNC ISSUE";
-    toast("Signed in. Some records remain only on this device until sync succeeds.");
-  }
-  if (currentRole === "admin") await loadAdminDashboard();
+  if (!user || authRecoveryActive) return;
+  if (finishingUserId === user.id && finishPromise) return finishPromise;
+  finishingUserId = user.id;
+  finishPromise = (async () => {
+    currentUser = user;
+    currentRole = "user";
+    activateAccountData(user);
+    render();
+    // Successful authentication opens the app even if an optional service is down.
+    showAccountState(true);
+    try {
+      await loadCurrentRole();
+      if (currentUser?.id !== user.id) return;
+      showAccountState(true);
+      await syncCloudEntries();
+      await syncHealthEntries();
+    } catch {
+      if (currentUser?.id !== user.id) return;
+      if ($("syncStatus")) $("syncStatus").textContent = "SYNC ISSUE";
+      toast("Signed in. Your data will sync when the connection returns.");
+    }
+    if (currentUser?.id === user.id && currentRole === "admin") await loadAdminDashboard();
+  })();
+  try { await finishPromise; }
+  finally { finishingUserId = null; finishPromise = null; }
 }
 async function handleLogin(event) {
   event.preventDefault();
   if (!pulseClient) { setLoginMessage("The secure sign-in service did not load. Check your connection."); return; }
   const button = $("loginSubmit");
+  if (button.disabled) return;
   button.disabled = true; button.textContent = "Signing in…";
   setLoginMessage("");
   try {
@@ -408,8 +426,7 @@ async function handleLogin(event) {
     if (error) throw error;
     await finishSignIn(data.user);
   } catch (error) {
-    console.error("PULSE sign in:", error);
-    setLoginMessage("We couldn't sign you in. Check your email and password, and confirm your email address if you just registered.");
+    setLoginMessage(pulseAuthError(error));
   } finally {
     button.disabled = false; button.textContent = "Sign in";
   }
@@ -420,6 +437,7 @@ async function handleSignup(event) {
   const password = $("signupPassword").value;
   const confirmation = $("signupPasswordConfirm").value;
   const button = $("signupSubmit");
+  if (button.disabled) return;
   if (password.length < 8) { setAuthMessage("signupMessage", "Use a password with at least 8 characters."); return; }
   if (password !== confirmation) { setAuthMessage("signupMessage", "The passwords don't match."); return; }
   if (!pulseClient) { setAuthMessage("signupMessage", "The secure sign-up service did not load. Check your connection."); return; }
@@ -437,8 +455,7 @@ async function handleSignup(event) {
       setAuthMessage("signupMessage", "Account created. Check your inbox and confirm your email before signing in.", false);
     }
   } catch (error) {
-    console.error("PULSE sign up:", error);
-    setAuthMessage("signupMessage", error.message || "We couldn't create the account. Check the email and try again.");
+    setAuthMessage("signupMessage", pulseAuthError(error));
   } finally {
     button.disabled = false; button.textContent = "Create account";
   }
@@ -457,8 +474,7 @@ async function handleForgotPassword(event) {
     if (error) throw error;
     setAuthMessage("forgotMessage", "If an account exists for this email, a recovery link will arrive shortly. Open it on this device to choose a new password.", false);
   } catch (error) {
-    console.error("PULSE password recovery:", error);
-    setAuthMessage("forgotMessage", error.message || "We couldn't send the recovery email. Please try again.");
+    setAuthMessage("forgotMessage", pulseAuthError(error));
   } finally {
     button.disabled = false; button.textContent = "Send recovery email";
   }
@@ -477,7 +493,7 @@ async function handlePasswordUpdate(event) {
     const { data, error } = await pulseClient.auth.updateUser({ password });
     if (error) throw error;
     setAuthMessage("resetPasswordMessage", "Password updated. Opening your PULSE account…", false);
-    if (data.user) await finishSignIn(data.user);
+    if (data.user) { authRecoveryActive = false; await finishSignIn(data.user); }
   } catch (error) {
     console.error("PULSE password update:", error);
     setAuthMessage("resetPasswordMessage", error.message || "We couldn't update the password. Request a fresh recovery email and try again.");
@@ -543,7 +559,6 @@ async function handleLogout() {
   showAccountState(false);
   setLoginMessage("You have signed out.", false);
 }
-$("loginForm")?.addEventListener("submit", handleLogin);
 $("logoutButton")?.addEventListener("click", handleLogout);
 (async function initialisePulseAuth() {
   showAuthView("login");
@@ -553,11 +568,18 @@ $("logoutButton")?.addEventListener("click", handleLogout);
   }
   pulseClient.auth.onAuthStateChange((event, session) => {
     if (event === "PASSWORD_RECOVERY") {
+      authRecoveryActive = true;
       showAccountState(false);
       showAuthView("reset");
       setAuthMessage("resetPasswordMessage", "Choose a new password for your account.", false);
     }
+    if (event === "SIGNED_IN" && session?.user && !authRecoveryActive) {
+      // Defer Supabase calls until its auth callback has released the session lock.
+      setTimeout(() => finishSignIn(session.user).catch(() => setLoginMessage("Could not open your account. Please retry.")), 0);
+    }
     if (event === "SIGNED_OUT") {
+      authRecoveryActive = false;
+      entries = [];
       clearHealthSecret();
       currentUser = null;
       currentRole = "user";
@@ -566,8 +588,7 @@ $("logoutButton")?.addEventListener("click", handleLogout);
     }
   });
   const { data, error } = await pulseClient.auth.getSession();
-  const isRecoveryLink = window.location.hash.includes("type=recovery");
-  if (isRecoveryLink) {
+  if (authRecoveryActive) {
     showAccountState(false);
     showAuthView("reset");
     setAuthMessage("resetPasswordMessage", "Choose a new password for your account.", false);
@@ -575,5 +596,22 @@ $("logoutButton")?.addEventListener("click", handleLogout);
   }
   if (error || !data.session) { currentUser = null; showAccountState(false); return; }
   await finishSignIn(data.session.user);
-})();
+})().catch(() => { showAccountState(false); setLoginMessage("Could not restore your session. Check your connection and sign in again."); });
 
+
+$("deleteAccount")?.addEventListener("click", async () => {
+  if (!currentUser || !pulseClient) return;
+  if (!confirm("Delete your PULSE account and all its measurements permanently? Apple Health originals are kept. This cannot be undone.")) return;
+  const button = $("deleteAccount"); button.disabled = true;
+  const userId = currentUser.id;
+  try {
+    const {data, error} = await pulseClient.functions.invoke("pulse-delete-account", {body:{confirmation:"DELETE"}});
+    if (error || !data?.deleted) throw error || new Error("Deletion failed");
+    localStorage.removeItem(accountStoreKey(userId));
+    if (userId === MASTER_UID) localStorage.removeItem(STORE_KEY);
+    await pulseClient.auth.signOut({scope:"local"});
+    currentUser = null; currentRole = "user"; entries = []; clearHealthSecret();
+    showAccountState(false); setLoginMessage("Your account and PULSE data have been deleted.", false);
+  } catch { toast("Could not delete your account. Sign in again and retry."); }
+  finally { button.disabled = false; }
+});
