@@ -1,0 +1,55 @@
+name: Verify PULSE
+on:
+  push:
+    branches: [main, codex/web-release]
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: verify-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --check app.js && node --check auth-errors.js && node --check health-sync.js && node --check service-worker.js
+      - run: node tests/auth.test.cjs && node tests/health-sync.test.cjs && node tests/delete-account.test.mjs
+      - run: node tests/live-auth-smoke.mjs
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ephemeral-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: ephemeral-test-only
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create disposable Auth test schema
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          create role anon;
+          create role authenticated;
+          create schema auth;
+          create table auth.users(id uuid primary key);
+          create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+          grant usage on schema auth to anon, authenticated;
+          grant execute on function auth.uid() to anon, authenticated;
+          SQL
+      - run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/202611060001_health_shortcuts.sql
+      - run: psql -v ON_ERROR_STOP=1 -f tests/health-sync.sql

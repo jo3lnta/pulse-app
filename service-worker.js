@@ -1,7 +1,7 @@
-const CACHE_NAME = 'pulse-shell-v21';
+const CACHE_NAME = 'pulse-shell-v23';
 const APP_FILES = [
   './', './index.html', './styles.css', './app.js',
-  './manifest.webmanifest', './icons/pulse.svg'
+  './auth-errors.js', './health-sync.js', './docs/apple-health.html', './docs/privacy.html', './docs/support.html', './manifest.webmanifest', './icons/pulse-192.png', './icons/pulse-512.png', './icons/pulse.svg'
 ];
 
 self.addEventListener('install', event => {
@@ -35,3 +35,4 @@ self.addEventListener('fetch', event => {
     }
   })());
 });
+
