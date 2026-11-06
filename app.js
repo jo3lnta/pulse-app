@@ -598,20 +598,3 @@ $("logoutButton")?.addEventListener("click", handleLogout);
   await finishSignIn(data.session.user);
 })().catch(() => { showAccountState(false); setLoginMessage("Could not restore your session. Check your connection and sign in again."); });
 
-
-$("deleteAccount")?.addEventListener("click", async () => {
-  if (!currentUser || !pulseClient) return;
-  if (!confirm("Delete your PULSE account and all its measurements permanently? Apple Health originals are kept. This cannot be undone.")) return;
-  const button = $("deleteAccount"); button.disabled = true;
-  const userId = currentUser.id;
-  try {
-    const {data, error} = await pulseClient.functions.invoke("pulse-delete-account", {body:{confirmation:"DELETE"}});
-    if (error || !data?.deleted) throw error || new Error("Deletion failed");
-    localStorage.removeItem(accountStoreKey(userId));
-    if (userId === MASTER_UID) localStorage.removeItem(STORE_KEY);
-    await pulseClient.auth.signOut({scope:"local"});
-    currentUser = null; currentRole = "user"; entries = []; clearHealthSecret();
-    showAccountState(false); setLoginMessage("Your account and PULSE data have been deleted.", false);
-  } catch { toast("Could not delete your account. Sign in again and retry."); }
-  finally { button.disabled = false; }
-});

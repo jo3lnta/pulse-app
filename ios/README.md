@@ -14,7 +14,7 @@ Health observers register at launch for connected accounts. Delivery is best eff
 
 Health tables/RPC migration has been applied to the live PULSE Supabase project. The public registration/email recovery blocker is the unconfigured production email provider. Follow `docs/auth-setup.html`; do not disable email confirmation or embed an SMTP/admin key in the app.
 
-Account removal code is included in `supabase/functions/pulse-delete-account/index.ts` and has mocked authorization tests. Deployment was blocked by automatic review and needs the owner's specific approval because the endpoint permanently deletes accounts. It has NOT been deployed. Do not submit the iOS app before deploying and verifying this endpoint. It derives the target user from a verified session, revokes sessions, then deletes that user; foreign keys cascade the PULSE records.
+Account removal code is included in `supabase/functions/pulse-delete-account/index.ts` and has mocked authorization tests. Automatic review blocked deployment, and the owner explicitly declined to activate the endpoint. It has NOT been deployed, and the removal buttons have been removed from both clients. Do not submit the iOS app before deploying and verifying this endpoint. It derives the target user from a verified session, revokes sessions, then deletes that user; foreign keys cascade the PULSE records.
 
 ## App Store release requirements
 
@@ -23,7 +23,7 @@ The owner confirmed that they do not yet have Apple Developer or App Store Conne
 1. Enroll in the Apple Developer Program at https://developer.apple.com/programs/enroll/ and accept Apple's agreements yourself. Any membership fee is paid by the owner.
 2. Register the final bundle identifier and enable HealthKit. Configure your team in Xcode and select a valid distribution signing identity/profile.
 3. Configure the production email provider and allowed auth redirects in Supabase, and verify sign-up, confirmation, password sign-in and recovery with an external account on a real iPhone.
-4. Approve, deploy and test account removal. Test consent refusal, partial Health permissions, app relaunch, background delivery, offline recovery, session expiry, and account switching. Test with real Health data; simulator unit tests are not an end-to-end HealthKit test.
+4. Implement an App Store compliant account-removal flow. The owner currently declined deployment of the prepared removal endpoint, so this is a release blocker. If that decision changes, deploy and test the endpoint before restoring its buttons. Test consent refusal, partial Health permissions, app relaunch, background delivery, offline recovery, session expiry, and account switching. Test with real Health data; simulator unit tests are not an end-to-end HealthKit test.
 5. Review `docs/privacy.html` and add the owner's final legal identity/contact information before public store submission. Confirm the App Privacy questionnaire matches actual processing: linked email, user ID, health and fitness for app functionality; no tracking. Include technical diagnostics if retained by service providers. The privacy manifest is a starting disclosure, not a substitute for the App Store questionnaire.
 6. Create the app record in App Store Connect. Use real device screenshots and a review account that works with production SMTP; select the intended countries and regions. Use the published privacy/support URLs below.
 7. In Xcode: Product > Archive > Validate App > Distribute App > App Store Connect. Test via TestFlight, complete age rating/export compliance and submit for Apple's review. HealthKit entitlement and any further review questions must be resolved with Apple. Publication depends on approval.
@@ -35,4 +35,4 @@ Suggested listing copy (review before submission):
 
 - Name: PULSE — Salud personal
 - Subtitle: Tu historial de salud y hábitos
-- Description: Consulta tus registros de pulso, variabilidad cardíaca, sueño y pasos. Añade mediciones manuales o conecta Apple Salud con tu permiso para sincronizar resúmenes diarios con tu cuenta PULSE. Controla la conexión y elimina tu cuenta desde Perfil. Las actualizaciones en segundo plano dependen de iOS. PULSE es un registro de bienestar y no ofrece diagnósticos ni consejo médico.
+- Description: Consulta tus registros de pulso, variabilidad cardíaca, sueño y pasos. Añade mediciones manuales o conecta Apple Salud con tu permiso para sincronizar resúmenes diarios con tu cuenta PULSE. Controla la conexión desde Perfil. Las actualizaciones en segundo plano dependen de iOS. PULSE es un registro de bienestar y no ofrece diagnósticos ni consejo médico.

@@ -18,7 +18,7 @@ import HealthKit
         try await store.requestAuthorization(toShare:[], read:types)
     }
     func observe(userID: UUID) {
-        stop(); activeUser = userID
+        stop(disableDelivery:false); activeUser = userID
         for type in types.compactMap({ $0 as? HKSampleType }) {
             let observer = HKObserverQuery(sampleType:type, predicate:nil) { [weak self] _, completion, error in
                 Task { @MainActor in
@@ -32,9 +32,9 @@ import HealthKit
             store.enableBackgroundDelivery(for:type, frequency:.hourly) { _, _ in }
         }
     }
-    func stop() {
+    func stop(disableDelivery: Bool = true) {
         observers.forEach { store.stop($0) }; observers.removeAll(); activeUser = nil
-        store.disableAllBackgroundDelivery { _, _ in }
+        if disableDelivery { store.disableAllBackgroundDelivery { _, _ in } }
     }
     func sync(userID: UUID) async throws {
         guard !syncing, activeUser == userID,
