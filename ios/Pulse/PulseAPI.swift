@@ -20,7 +20,17 @@ struct Measurement: Codable, Identifiable {
     var unit: String { ["hr":"bpm", "hrv":"ms", "sleep":"h", "steps":"pasos"][type] ?? "" }
 }
 struct DailyRecord: Codable { let type: String; let date: String; let value: Double }
-struct APIError: Decodable { let msg: String?; let message: String?; let error_code: String?; let code: String? }
+struct APIError: Decodable {
+    let msg: String?; let message: String?; let error_code: String?; let code: String?
+    enum CodingKeys: String, CodingKey { case msg, message, error_code, code }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy:CodingKeys.self)
+        msg = try? c.decode(String.self,forKey:.msg)
+        message = try? c.decode(String.self,forKey:.message)
+        error_code = try? c.decode(String.self,forKey:.error_code)
+        code = try? c.decode(String.self,forKey:.code)
+    }
+}
 enum PulseError: LocalizedError {
     case message(String)
     case authenticationRequired
@@ -64,7 +74,8 @@ struct PulseAPI {
         guard let http = response as? HTTPURLResponse else { throw PulseError.message("Respuesta de red inválida.") }
         guard (200..<300).contains(http.statusCode) else {
             let error = try? JSONDecoder().decode(APIError.self, from:data)
-            let code = error?.error_code ?? error?.code ?? ""
+            let text = error?.msg ?? error?.message ?? ""
+            let code = error?.error_code ?? error?.code ?? (text.lowercased().contains("invalid login credentials") ? "invalid_credentials" : "")
             if path.contains("grant_type=refresh_token"), http.statusCode == 400 || http.statusCode == 401 { throw PulseError.authenticationRequired }
             let message: String
             switch code {

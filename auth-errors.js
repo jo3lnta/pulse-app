@@ -10,7 +10,7 @@ function pulseAuthError(error) {
   if (error?.status === 429 || code === "over_request_rate_limit") return es
     ? "Demasiados intentos. Espera unos minutos y vuelve a intentarlo."
     : "Too many attempts. Wait a few minutes before trying again.";
-  if (code === "invalid_credentials") return es
+  if (code === "invalid_credentials" || /invalid login credentials/i.test(error?.message || "")) return es
     ? "Correo o contraseña incorrectos. Si aún no tienes cuenta, pulsa Crear una cuenta."
     : "Incorrect email or password. If you do not have an account yet, choose Create an account.";
   if (code === "signup_disabled") return es ? "El registro está desactivado temporalmente." : "Registration is temporarily disabled.";
