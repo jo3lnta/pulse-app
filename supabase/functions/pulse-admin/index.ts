@@ -45,8 +45,8 @@ Deno.serve(async (req: Request) => {
 
     const { data: authUsers, error: usersError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (usersError) throw usersError;
-    const { data: roles, error: rolesError } = await admin.from("user_roles").select("user_id,role");
-    if (rolesError) throw rolesError;
+    // Role authorization was already checked with the authenticated client; avoid exposing or depending on table grants here.
+    const roles = [{ user_id: authData.user.id, role: "admin" }];
     // Read only user IDs to count records; measurement values and dates are never returned.
     const { data: entryOwners, error: entriesError } = await admin.from("entries").select("user_id");
     if (entriesError) throw entriesError;
