@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090d0c">
   <meta name="description" content="PULSE — your personal health and activity dashboard.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://jo3lnta.github.io/pulse-app/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PULSE — Personal health and activity dashboard">
+  <meta property="og:description" content="A private dashboard for personal wellness, sleep and activity trends.">
+  <meta property="og:url" content="https://jo3lnta.github.io/pulse-app/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="PULSE — Personal health and activity dashboard">
+  <meta name="twitter:description" content="A private dashboard for personal wellness, sleep and activity trends.">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,6 +27,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script src="https-redirect.js"></script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"PULSE","url":"https://jo3lnta.github.io/pulse-app/","applicationCategory":"HealthApplication","operatingSystem":"Web","description":"Private personal wellness, sleep and activity dashboard.","isAccessibleForFree":true}</script>
 </head>
 <body>
   <section class="login-screen" id="loginScreen">
@@ -28,6 +39,7 @@
       <p class="login-copy" id="authCopy">Sign in to access your personal PULSE data and keep your devices in sync.</p>
 
       <form id="loginForm" class="auth-form">
+        <div class="hp-field" aria-hidden="true"><label>Website<input id="loginWebsite" tabindex="-1" autocomplete="off"></label></div>
         <label for="loginEmail" id="loginEmailLabel">Email</label>
         <input id="loginEmail" type="email" autocomplete="username" placeholder="Your account email" required>
         <label for="loginPassword" id="loginPasswordLabel">Password</label>
@@ -39,6 +51,7 @@
       </form>
 
       <form id="signupForm" class="auth-form" hidden>
+        <div class="hp-field" aria-hidden="true"><label>Website<input id="signupWebsite" tabindex="-1" autocomplete="off"></label></div>
         <label for="signupEmail" id="signupEmailLabel">Email</label>
         <input id="signupEmail" type="email" autocomplete="email" placeholder="Your email address" required>
         <label for="signupPassword" id="signupPasswordLabel">Password</label>
@@ -53,6 +66,7 @@
       </form>
 
       <form id="forgotForm" class="auth-form" hidden>
+        <div class="hp-field" aria-hidden="true"><label>Website<input id="forgotWebsite" tabindex="-1" autocomplete="off"></label></div>
         <label for="forgotEmail" id="forgotEmailLabel">Account email</label>
         <input id="forgotEmail" type="email" autocomplete="email" placeholder="Your account email" required>
         <button class="primary-button login-submit" id="forgotSubmit" type="submit">Send recovery email</button>
@@ -69,7 +83,7 @@
         <p class="login-message" id="resetPasswordMessage" role="status" aria-live="polite"></p>
       </form>
 
-      <p class="auth-switch"><a href="docs/privacy.html">Privacidad</a> · <a href="docs/support.html">Ayuda y soporte</a></p>
+      <p class="auth-switch legal-links"><a href="docs/legal.html">Aviso legal</a> · <a href="docs/privacy.html">Privacidad</a> · <a href="docs/cookies.html">Cookies</a> · <a href="docs/ai.html">Uso de IA</a> · <a href="docs/support.html">Ayuda</a></p>
       <div class="login-lock">⌑ <span id="authPrivacy">Your records are private to your account.</span></div>
     </div>
   </section>
@@ -82,6 +96,7 @@
         <button class="nav-link" data-page="recovery"><span class="nav-icon">♡</span> Recovery</button>
         <button class="nav-link" data-page="sleep"><span class="nav-icon">☾</span> Sleep</button>
         <button class="nav-link" data-page="activity"><span class="nav-icon">⌁</span> Activity</button>
+        <button class="nav-link" data-page="insights"><span class="nav-icon">✦</span> Insights</button>
         <button class="nav-link" data-page="admin" data-admin-nav hidden><span class="nav-icon">⚙</span> Administration</button>
       </nav>
       <div class="sidebar-bottom">
@@ -118,6 +133,7 @@
           <article class="panel"><div class="panel-heading"><div><div class="eyebrow">RECENT ACTIVITY</div><h3>Latest entries</h3></div><button class="text-button" data-goto="activity">View all ↗</button></div><div id="recentEntries" class="empty-state"><div class="empty-icon">⌁</div><strong>No entries yet</strong><p>Add a measurement to start building your personal history.</p><button class="outline-button" id="firstLog">Add first entry</button></div></article>
           <article class="panel note-panel"><div class="note-icon">✳</div><div class="eyebrow">A NOTE FROM PULSE</div><h3>Better data.<br>Better context.</h3><p>PULSE is a personal tracking tool, not a medical device. It won't diagnose conditions or tell you whether you should train.</p><span class="note-link" data-goto="profile">About your data ↗</span></article>
         </div>
+        <article class="panel insights-callout"><div><div class="eyebrow">NEW · PERSONAL INSIGHTS</div><h3>Strain, sleep score, stress and habits.</h3><p>Experimental local trends based on your own entries. They are not medical measurements or diagnoses.</p></div><button class="outline-button" data-goto="insights">Open Insights ↗</button></article>
       </section>
 
       <section class="page" id="page-recovery">
@@ -143,6 +159,22 @@
         <div class="page-intro"><div class="eyebrow">MOVEMENT & EXERCISE</div><h1>Activity<span class="green">.</span></h1><p class="muted">Keep a simple record of daily movement.</p></div>
         <div class="activity-hero"><div><div class="eyebrow light">TODAY'S STEPS</div><div class="activity-number" id="activity-steps">—</div><p>Record a daily step total to start your activity history.</p></div><div class="activity-icon">⌁</div></div><div class="metric-grid two activity-summary"><article class="metric-card"><div class="metric-top"><span>7-DAY TOTAL</span><span class="metric-symbol green">⌁</span></div><div class="metric-value" id="activity-week-total">—</div><div class="metric-foot">Steps recorded in the last 7 days</div></article><article class="metric-card"><div class="metric-top"><span>DAILY AVERAGE</span><span class="metric-symbol blue">◷</span></div><div class="metric-value" id="activity-week-average">—</div><div class="metric-foot">Average on days with a record</div></article><article class="metric-card"><div class="metric-top"><span>DAYS LOGGED</span><span class="metric-symbol violet">▦</span></div><div class="metric-value" id="activity-days">0 / 7</div><div class="metric-foot">Days with a step entry</div></article></div>
         <article class="panel"><div class="panel-heading"><div><div class="eyebrow">DAILY LOG</div><h3>Activity history</h3></div><button class="primary-button small" data-open-log="steps">＋ Log steps</button></div><div id="activityEntries" class="empty-state compact"><div class="empty-icon">⌁</div><strong>No activity entries yet</strong><p>Your daily totals will appear here.</p></div></article>
+      </section>
+
+      <section class="page" id="page-insights">
+        <div class="page-intro"><div class="eyebrow">PERSONAL INSIGHTS · BETA</div><h1>Insights<span class="green">.</span></h1><p class="muted">Private, experimental summaries calculated from the records in this account.</p></div>
+        <div class="insight-grid">
+          <article class="metric-card"><div class="metric-top"><span>DAILY STRAIN</span><span class="metric-symbol green">⌁</span></div><div class="metric-value" id="insightStrain">— <small>/21</small></div><div class="metric-foot" id="insightStrainCopy">Add steps to estimate an activity load.</div></article>
+          <article class="metric-card"><div class="metric-top"><span>ACTIVITY DETECTION</span><span class="metric-symbol blue">◷</span></div><div class="metric-value" id="insightActivity">—</div><div class="metric-foot" id="insightActivityCopy">No movement record today.</div></article>
+          <article class="metric-card"><div class="metric-top"><span>SLEEP SCORE</span><span class="metric-symbol violet">☾</span></div><div class="metric-value" id="insightSleep">— <small>/100</small></div><div class="metric-foot" id="insightSleepCopy">Add sleep to create a personal trend.</div></article>
+          <article class="metric-card"><div class="metric-top"><span>STRESS MONITOR</span><span class="metric-symbol pink">♡</span></div><div class="metric-value" id="insightStress">—</div><div class="metric-foot" id="insightStressCopy">Uses HRV versus your recent baseline.</div></article>
+        </div>
+        <div class="bottom-grid insights-bottom">
+          <article class="panel"><div class="panel-heading"><div><div class="eyebrow">HABIT JOURNAL</div><h3>Today’s habits</h3><p class="muted">Saved privately in this browser for this account.</p></div></div><div id="habitJournal" class="habit-journal"></div></article>
+          <article class="panel coach-panel"><div class="eyebrow">PULSE COACH · BETA</div><h3 id="coachTitle">Build your baseline.</h3><p id="coachCopy">Add at least a few days of sleep, HRV and activity records to receive an automated summary.</p><p class="ai-disclosure">Automated, local suggestions only. Not medical advice and not a substitute for a clinician.</p><a class="note-link" href="docs/ai.html">How automated insights work ↗</a></article>
+        </div>
+        <section class="plans-section" aria-labelledby="plansTitle"><div class="section-heading"><div><div class="eyebrow">PLANS</div><h2 id="plansTitle">Choose when you are ready.</h2></div><span class="subtle">No payment is collected in this app.</span></div><div class="plans-grid"><article class="plan-card"><div class="eyebrow">FREE</div><h3>PULSE Free</h3><p>Personal logs, charts and local insights.</p><strong>€0</strong><button class="outline-button" type="button" disabled>Current experience</button></article><article class="plan-card featured"><div class="eyebrow">COMING SOON</div><h3>PULSE Plus</h3><p>Future premium features will be shown here before any checkout is enabled.</p><strong>—</strong><button class="primary-button" type="button" disabled>Payments not active</button></article></div></section>
+        <p class="disclaimer">Scores are experimental wellness indicators derived from data you choose to enter. They do not detect activity, stress, illness or sleep disorders in a clinical sense.</p>
       </section>
 
       <section class="page" id="page-admin">
@@ -171,7 +203,7 @@
 
       <section class="page" id="page-profile">
         <div class="page-intro"><div class="eyebrow">YOUR SPACE</div><h1>Profile<span class="green">.</span></h1><p class="muted">Preferences, privacy and app information.</p></div>
-        <article class="panel settings-panel"><div class="settings-row"><div class="settings-icon">◎</div><div><strong>Personal dashboard</strong><p>Your entries are stored in your PULSE account and synced across your devices.</p></div></div><div class="settings-row"><div class="settings-icon">⌑</div><div><strong>Privacy first</strong><p>Cloud sync uses account-scoped access controls. Only your account can read your measurements.</p></div></div><div class="settings-row"><div class="settings-icon">♥</div><div><strong>Health data connection</strong><p>Log Apple Health daily totals automatically using an iPhone Shortcuts automation.</p><p id="healthStatus" role="status" aria-live="polite">Checking connection…</p><button class="primary-button" id="healthConnect" type="button">Create / renew connection key</button> <button class="danger-button" id="healthDisconnect" type="button">Disconnect</button> <button class="primary-button" id="healthRefresh" type="button">Sync now</button><div id="healthSecret" hidden><p>Save this key in your private Shortcut. It is shown only now; renewing it disables the previous key.</p><input id="healthToken" aria-label="Health connection key" type="password" readonly autocomplete="off"><button id="healthCopy" type="button">Copy key</button></div><p><a href="docs/apple-health.html" target="_blank" rel="noopener">Set up the iPhone automation</a></p></div></div><div class="settings-row"><div class="settings-icon">ⓘ</div><div><strong>About PULSE</strong><p>Independent wellness tracker prototype. Not a medical device.</p></div></div><button class="danger-button" id="clearData">Clear all my entries</button> <button class="danger-button" id="deleteAccount" type="button">Delete my account</button></article>
+        <article class="panel settings-panel"><div class="settings-row"><div class="settings-icon">◎</div><div><strong>Personal dashboard</strong><p>Your entries are stored in your PULSE account and synced across your devices.</p></div></div><div class="settings-row"><div class="settings-icon">⌑</div><div><strong>Privacy first</strong><p>Cloud sync uses account-scoped access controls. Only your account can read your measurements.</p><p><a href="docs/legal.html">Legal notice</a> · <a href="docs/privacy.html">Privacy</a> · <a href="docs/cookies.html">Cookies</a> · <a href="docs/ai.html">AI notice</a></p></div></div><div class="settings-row"><div class="settings-icon">♥</div><div><strong>Health data connection</strong><p>Log Apple Health daily totals automatically using an iPhone Shortcuts automation.</p><p id="healthStatus" role="status" aria-live="polite">Checking connection…</p><button class="primary-button" id="healthConnect" type="button">Create / renew connection key</button> <button class="danger-button" id="healthDisconnect" type="button">Disconnect</button> <button class="primary-button" id="healthRefresh" type="button">Sync now</button><div id="healthSecret" hidden><p>Save this key in your private Shortcut. It is shown only now; renewing it disables the previous key.</p><input id="healthToken" aria-label="Health connection key" type="password" readonly autocomplete="off"><button id="healthCopy" type="button">Copy key</button></div><p><a href="docs/apple-health.html" target="_blank" rel="noopener">Set up the iPhone automation</a></p></div></div><div class="settings-row"><div class="settings-icon">ⓘ</div><div><strong>About PULSE</strong><p>Independent wellness tracker prototype. Not a medical device. <a href="docs/ai.html">Read the AI/automation notice.</a></p></div></div><button class="danger-button" id="clearData">Clear all my entries</button> <button class="danger-button" id="deleteAccount" type="button">Delete my account</button></article>
       </section>
     </main>
 
@@ -180,6 +212,7 @@
       <button class="nav-link" data-page="recovery" aria-label="Recovery"><span class="nav-icon">♡</span><span>Recovery</span></button>
       <button class="nav-link" data-page="sleep" aria-label="Sleep"><span class="nav-icon">☾</span><span>Sleep</span></button>
       <button class="nav-link" data-page="activity" aria-label="Activity"><span class="nav-icon">⌁</span><span>Activity</span></button>
+      <button class="nav-link" data-page="insights" aria-label="Insights"><span class="nav-icon">✦</span><span>Insights</span></button>
       <button class="nav-link" data-page="admin" data-admin-nav hidden aria-label="Administration"><span class="nav-icon">⚙</span><span>Admin</span></button>
       <button class="nav-link" data-page="profile" aria-label="Profile"><span class="nav-icon">◎</span><span>Profile</span></button>
     </nav>
@@ -204,6 +237,8 @@
     </form>
   </dialog>
   <div class="toast" id="toast" role="status"></div>
+  <aside class="cookie-notice" id="cookieNotice" aria-label="Cookie notice" hidden><p>We use essential browser storage for your session, language and app data. No advertising cookies are used.</p><a href="docs/cookies.html">Cookie policy</a><button class="outline-button" id="acceptCookies" type="button">Understood</button></aside>
+  <script>(() => { const key = "pulse.cookie.notice.v1", notice = document.getElementById("cookieNotice"); if (!notice) return; notice.hidden = localStorage.getItem(key) === "seen"; document.getElementById("acceptCookies")?.addEventListener("click", () => { localStorage.setItem(key, "seen"); notice.hidden = true; }); })();</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="auth-errors.js"></script>
   <script src="health-sync.js"></script>
