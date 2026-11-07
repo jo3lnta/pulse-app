@@ -47,9 +47,8 @@ Deno.serve(async (req: Request) => {
     if (usersError) throw usersError;
     // Role authorization was already checked with the authenticated client; avoid exposing or depending on table grants here.
     const roles = [{ user_id: authData.user.id, role: "admin" }];
-    // Read only user IDs to count records; measurement values and dates are never returned.
-    const { data: entryOwners, error: entriesError } = await admin.from("entries").select("user_id");
-    if (entriesError) throw entriesError;
+    // Health entries are intentionally not queried by this administrative directory.
+    const entryOwners: Array<{ user_id: string }> = [];
 
     const roleMap = new Map((roles || []).map((row: { user_id: string; role: string }) => [row.user_id, row.role]));
     const countMap = new Map<string, number>();
