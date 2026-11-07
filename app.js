@@ -403,14 +403,24 @@ async function loadCurrentRole() {
   const { data, error } = await pulseClient.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
   if (currentUser?.id === userId && !error && data?.role === "admin") currentRole = "admin";
 }
+function profileStoreKey() { return `pulse.profile.v1.${currentUser?.id || "guest"}`; }
+function loadProfileCustomization() { try { return JSON.parse(localStorage.getItem(profileStoreKey()) || "{}"); } catch { return {}; } }
+function applyProfileCustomization() {
+  const profile = loadProfileCustomization();
+  const name = profile.name || currentUser?.email || "PULSE account";
+  const initial = name.trim().slice(0, 1).toUpperCase() || "P";
+  if ($("accountEmail")) $("accountEmail").textContent = name;
+  if ($("accountInitial")) { $("accountInitial").textContent = initial; $("accountInitial").style.backgroundImage = profile.avatar ? `url(${profile.avatar})` : ""; $("accountInitial").style.backgroundSize = "cover"; $("accountInitial").style.backgroundPosition = "center"; }
+  if ($("profileDisplayName")) $("profileDisplayName").value = profile.name || "";
+  const preview = $("profileAvatarPreview"); if (preview) { preview.textContent = profile.avatar ? "" : initial; preview.style.backgroundImage = profile.avatar ? `url(${profile.avatar})` : ""; preview.style.backgroundSize = "cover"; preview.style.backgroundPosition = "center"; }
+}
 function showAccountState(signedIn) {
   const roleEl = $("accountRole");
   if (roleEl) { roleEl.hidden = !signedIn; roleEl.textContent = currentRole === "admin" ? "MASTER ADMIN" : "MEMBER"; roleEl.classList.toggle("admin-role", currentRole === "admin"); }
   const login = $("loginScreen"), shell = document.querySelector(".app-shell");
   if (login) login.hidden = signedIn;
   if (shell) shell.hidden = !signedIn;
-  if ($("accountEmail")) $("accountEmail").textContent = currentUser?.email || "PULSE account";
-  if ($("accountInitial")) $("accountInitial").textContent = (currentUser?.email || "P").slice(0,1).toUpperCase();
+  applyProfileCustomization();
   if ($("syncStatus")) $("syncStatus").textContent = signedIn ? "CLOUD SYNC" : "SIGNED OUT";
   document.querySelectorAll("[data-admin-nav]").forEach(el => { el.hidden = !(signedIn && currentRole === "admin"); });
 }
@@ -731,3 +741,14 @@ $("deleteAccount")?.addEventListener("click", async () => {
   finally { button.disabled = false; }
 });
 
+
+function setupProfileCustomization() {
+  $("profileAvatar")?.addEventListener("change", event => {
+    const file = event.target.files?.[0]; if (!file) return;
+    if (file.size > 1024 * 1024) { $("profileSaveStatus").textContent = "El avatar supera 1 MB."; event.target.value = ""; return; }
+    const reader = new FileReader(); reader.onload = () => { const p = loadProfileCustomization(); p.avatar = reader.result; localStorage.setItem(profileStoreKey(), JSON.stringify(p)); applyProfileCustomization(); $("profileSaveStatus").textContent = "Avatar guardado."; }; reader.readAsDataURL(file);
+  });
+  $("removeProfileAvatar")?.addEventListener("click", () => { const p = loadProfileCustomization(); delete p.avatar; localStorage.setItem(profileStoreKey(), JSON.stringify(p)); applyProfileCustomization(); $("profileSaveStatus").textContent = "Avatar eliminado."; });
+  $("saveProfileCustomization")?.addEventListener("click", () => { const input = $("profileDisplayName"); const name = input?.value.trim() || ""; const p = loadProfileCustomization(); if (name) p.name = name; else delete p.name; localStorage.setItem(profileStoreKey(), JSON.stringify(p)); applyProfileCustomization(); $("profileSaveStatus").textContent = "Perfil guardado."; });
+}
+setupProfileCustomization();
