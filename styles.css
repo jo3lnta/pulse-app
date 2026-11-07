@@ -109,6 +109,8 @@
 
 [data-admin-nav][hidden]{display:none!important}
 
+.plan-list{list-style:none;padding:0;margin:0;display:grid;gap:6px;color:#d6e5da;font-size:10px}.plan-list li::before{content:'✓';color:var(--green);margin-right:7px}.plans-note{color:#93a69a;font-size:10px;line-height:1.5;margin:12px 0 0}
+
 
 /* PULSE authentication: sign-up and recovery */
 .auth-form[hidden]{display:none!important}
