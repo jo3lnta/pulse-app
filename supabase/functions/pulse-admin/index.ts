@@ -26,7 +26,7 @@ Deno.serve(async (req: Request) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!url || !anonKey || !serviceKey) return respond({ error: "Server configuration is incomplete." }, 500);
 
-    const userClient = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const userClient = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false }, global: { headers: { Authorization: `Bearer ${token}` } } });
     const { data: authData, error: authError } = await userClient.auth.getUser(token);
     if (authError || !authData.user) return respond({ error: "Invalid or expired session." }, 401);
 
