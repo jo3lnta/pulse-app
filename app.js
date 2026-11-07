@@ -1,5 +1,6 @@
 const STORE_KEY = "pulse.entries.v1";
 const MASTER_UID = "3570b46e-0ad3-4b1b-9b40-47b379fb1a4c";
+let currentUser = null;
 function accountStoreKey(userId) { return `${STORE_KEY}.${userId}`; }
 function activateAccountData(user) {
   const key = accountStoreKey(user.id);
@@ -89,6 +90,47 @@ function recoveryEstimate() {
   return {value:Math.round((hrvTrend+sleepTrend)/2),message:'A rough comparison of your latest HRV and sleep duration with your own recent records. It is not a medical measure.'};
 }
 
+function insightEstimate() {
+  const todaySteps = entries.filter(e => e.type === "steps" && e.date === isoToday).sort((a, b) => b.createdAt - a.createdAt)[0];
+  const sleep = latest("sleep");
+  const hrv = entries.filter(e => e.type === "hrv").sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
+  const baseline = hrv.length >= 4 ? median(hrv.slice(-8, -1).map(e => Number(e.value))) : null;
+  const latestHrv = hrv.at(-1);
+  const strain = todaySteps ? Math.min(21, Math.max(0, Math.round((Number(todaySteps.value) / 10000) * 10 * 10) / 10)) : null;
+  const sleepScore = sleep ? Math.max(0, Math.min(100, Math.round(100 - Math.abs(Number(sleep.value) - 8) * 14))) : null;
+  let stress = null;
+  if (baseline && latestHrv && latestHrv.date >= isoToday.slice(0, 8) + "01") {
+    const difference = (Number(latestHrv.value) - baseline) / baseline;
+    stress = difference < -0.15 ? "Elevated" : difference < -0.04 ? "Moderate" : "Lower";
+  }
+  return { strain, hasActivity: Boolean(todaySteps && Number(todaySteps.value) > 0), sleepScore, stress, baseline };
+}
+function habitStoreKey() { return `pulse.habits.v1.${currentUser?.id || "guest"}`; }
+function loadHabits() { try { return JSON.parse(localStorage.getItem(habitStoreKey()) || "{}"); } catch { return {}; } }
+function renderInsights() {
+  const result = insightEstimate();
+  const put = (id, value) => { const el = $(id); if (el) el.textContent = value; };
+  put("insightStrain", result.strain == null ? "— /21" : `${result.strain} /21`);
+  put("insightStrainCopy", result.strain == null ? "Add steps to estimate an activity load." : "Experimental activity-load estimate from today’s steps.");
+  put("insightActivity", result.hasActivity ? "Logged" : "None");
+  put("insightActivityCopy", result.hasActivity ? "Movement record found for today." : "No movement record for today yet.");
+  put("insightSleep", result.sleepScore == null ? "— /100" : `${result.sleepScore} /100`);
+  put("insightSleepCopy", result.sleepScore == null ? "Add sleep to create a personal trend." : "Experimental duration-based estimate; not sleep quality.");
+  put("insightStress", result.stress || "—");
+  put("insightStressCopy", result.stress ? "Experimental HRV comparison with your recent baseline." : "Need at least four HRV entries for a personal baseline.");
+  const coach = result.sleepScore == null && !result.hasActivity ? ["Build your baseline.", "Add a few days of sleep, HRV and activity records to receive an automated summary."]
+    : result.stress === "Elevated" ? ["Take a lighter look at today.", "Your latest HRV is below your recent personal baseline. Consider your context and how you feel; this is not a medical alert."]
+    : result.hasActivity ? ["Keep your context together.", "You have activity recorded today. Pair it with sleep and HRV entries to make future summaries more useful."]
+    : ["Your data, your pace.", "Keep recording consistent measurements to refine your private trends."];
+  put("coachTitle", coach[0]); put("coachCopy", coach[1]);
+  const journal = $("habitJournal");
+  if (journal) {
+    const selected = loadHabits()[isoToday] || {};
+    const habits = [["movement", "Move intentionally"], ["sleep", "Keep a sleep routine"], ["water", "Hydrate"], ["reflect", "Take a moment to reflect"]];
+    journal.innerHTML = habits.map(([id, label]) => `<label class="habit-item"><input type="checkbox" data-habit="${id}" ${selected[id] ? "checked" : ""}> <span>${label}</span></label>`).join("");
+  }
+}
+
 function displayValue(type, suffix) {
   const e = latest(type);
   return e ? `${Number(e.value).toLocaleString(pulseDateLocale(), { maximumFractionDigits: 1 })} <small>${suffix}</small>` : `— <small>${suffix}</small>`;
@@ -118,7 +160,7 @@ function showPage(page) {
   if (page === "admin" && currentRole !== "admin") page = "home";
   document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === `page-${page}`));
   document.querySelectorAll(".nav-link[data-page]").forEach(b => b.classList.toggle("active", b.dataset.page === page));
-  const names = { home: "Overview", recovery: "Recovery", sleep: "Sleep", activity: "Activity", profile: "Profile & settings", admin: "Administration" };
+  const names = { home: "Overview", recovery: "Recovery", sleep: "Sleep", activity: "Activity", insights: "Insights", profile: "Profile & settings", admin: "Administration" };
   if ($("crumb")) $("crumb").textContent = names[page] || "Overview";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -274,6 +316,7 @@ function render() {
   // Restore the lists below their charts.
   if (sleepEl) sleepEl.insertAdjacentHTML("beforeend", `<div class="pulse-history-heading">RECENT NIGHTS</div>${sorted.filter(e => e.type === "sleep").slice(0, 7).map(row).join("") || `<div class="pulse-chart-empty">No sleep entries yet.</div>`}`);
   if (activityEl) activityEl.insertAdjacentHTML("beforeend", `<div class="pulse-history-heading">DAILY LOG</div>${sorted.filter(e => e.type === "steps").slice(0, 7).map(row).join("") || `<div class="pulse-chart-empty">No activity entries yet.</div>`}`);
+  renderInsights();
 }
 
 $("clearData")?.addEventListener("click", () => {
@@ -288,7 +331,6 @@ render();
 const PULSE_SUPABASE_URL = "https://sxsrlucazbgigxllxfgc.supabase.co";
 const PULSE_SUPABASE_KEY = "sb_publishable_WDTnMx0ugljuRqS4a16bGA_V-Y3c1w4";
 const pulseClient = window.supabase?.createClient(PULSE_SUPABASE_URL, PULSE_SUPABASE_KEY);
-let currentUser = null;
 let currentRole = "user";
 let syncQueue = Promise.resolve();
 let authRecoveryActive = new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery";
@@ -297,6 +339,9 @@ let finishPromise = null;
 
 function setLoginMessage(message, isError = true) {
   setAuthMessage("loginMessage", message, isError);
+}
+function looksLikeSpam(fieldId) {
+  return Boolean($(fieldId)?.value.trim());
 }
 function setAuthMessage(id, message, isError = true) {
   const el = $(id);
@@ -445,6 +490,7 @@ async function finishSignIn(user) {
 }
 async function handleLogin(event) {
   event.preventDefault();
+  if (looksLikeSpam("loginWebsite")) { setLoginMessage("We couldn't complete that request."); return; }
   if (!pulseClient) { setLoginMessage("The secure sign-in service did not load. Check your connection."); return; }
   const button = $("loginSubmit");
   if (button.disabled) return;
@@ -464,6 +510,7 @@ async function handleLogin(event) {
 }
 async function handleSignup(event) {
   event.preventDefault();
+  if (looksLikeSpam("signupWebsite")) { setAuthMessage("signupMessage", "We couldn't complete that request."); return; }
   const email = $("signupEmail").value.trim();
   const password = $("signupPassword").value;
   const confirmation = $("signupPasswordConfirm").value;
@@ -512,6 +559,7 @@ async function resendSignupConfirmation() {
 }
 async function handleForgotPassword(event) {
   event.preventDefault();
+  if (looksLikeSpam("forgotWebsite")) { setAuthMessage("forgotMessage", "We couldn't complete that request."); return; }
   const email = $("forgotEmail").value.trim();
   const button = $("forgotSubmit");
   if (!pulseClient) { setAuthMessage("forgotMessage", authText("connectionError", "Connection problem. Check your internet and try again.")); return; }
@@ -559,6 +607,13 @@ $("signupPassword")?.addEventListener("input", validateSignupForm);
 $("signupPasswordConfirm")?.addEventListener("input", validateSignupForm);
 $("forgotForm")?.addEventListener("submit", handleForgotPassword);
 $("resetPasswordForm")?.addEventListener("submit", handlePasswordUpdate);
+$("habitJournal")?.addEventListener("change", event => {
+  const input = event.target.closest("[data-habit]");
+  if (!input) return;
+  const all = loadHabits();
+  all[isoToday] = { ...(all[isoToday] || {}), [input.dataset.habit]: input.checked };
+  localStorage.setItem(habitStoreKey(), JSON.stringify(all));
+});
 $("showSignup")?.addEventListener("click", () => showAuthView("signup"));
 $("showLoginFromSignup")?.addEventListener("click", () => showAuthView("login"));
 $("showForgot")?.addEventListener("click", () => {
