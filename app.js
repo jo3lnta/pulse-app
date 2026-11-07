@@ -636,7 +636,13 @@ async function loadAdminDashboard() {
   if (status) status.textContent = "Loading account overview…";
   if (list) list.innerHTML = "";
   try {
-    const { data, error } = await pulseClient.functions.invoke("pulse-admin", { body: { action: "list" } });
+    let result = await pulseClient.functions.invoke("pulse-admin", { body: { action: "list" } });
+    if (result.error && (result.error.status === 401 || /401|expired|invalid session/i.test(String(result.error.message || "")))) {
+      const refreshed = await pulseClient.auth.refreshSession();
+      if (refreshed.error) throw result.error;
+      result = await pulseClient.functions.invoke("pulse-admin", { body: { action: "list" } });
+    }
+    const { data, error } = result;
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
     const stats = data.stats || {};
