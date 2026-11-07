@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jo3lnta.github.io/pulse-app/sitemap.xml
+
