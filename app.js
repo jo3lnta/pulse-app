@@ -304,6 +304,36 @@ function setAuthMessage(id, message, isError = true) {
   el.textContent = message;
   el.classList.toggle("error", isError);
 }
+function authLanguage() {
+  return localStorage.getItem("pulse.language.v1") || "en";
+}
+function authText(key, fallback) {
+  return window.PULSE_AUTH_TEXT?.[authLanguage()]?.[key] || fallback;
+}
+function pulseAuthError(error) {
+  const code = String(error?.code || "").toLowerCase();
+  const message = String(error?.message || "").toLowerCase();
+  if (code === "over_email_send_rate_limit" || message.includes("rate limit")) return authText("rateLimited", "Too many email requests. Please wait a minute and try again.");
+  if (message.includes("email not confirmed")) return authText("emailUnconfirmed", "Confirm your email address before signing in.");
+  if (message.includes("invalid login credentials")) return authText("invalidCredentials", "We couldn't sign you in. Check your email and password.");
+  if (message.includes("password") && message.includes("8")) return authText("weakPassword", "Use a password with at least 8 characters.");
+  if (message.includes("network") || message.includes("fetch")) return authText("connectionError", "Connection problem. Check your internet and try again.");
+  return authText("genericError", "Something went wrong. Please try again.");
+}
+function validateSignupForm() {
+  const email = $("signupEmail")?.value.trim() || "";
+  const password = $("signupPassword")?.value || "";
+  const confirmation = $("signupPasswordConfirm")?.value || "";
+  const validEmail = /^\S+@\S+\.\S+$/.test(email);
+  const message = !validEmail ? (email ? authText("invalidEmail", "Enter a valid email address.") : "")
+    : password.length < 8 ? authText("weakPassword", "Use a password with at least 8 characters.")
+    : confirmation && password !== confirmation ? authText("passwordMismatch", "The passwords don't match.") : "";
+  [["signupEmail", email && !validEmail], ["signupPassword", password && password.length < 8], ["signupPasswordConfirm", confirmation && password !== confirmation]]
+    .forEach(([id, invalid]) => $(id)?.setAttribute("aria-invalid", String(Boolean(invalid))));
+  const feedback = $("signupValidation");
+  if (feedback) { feedback.textContent = message; feedback.classList.toggle("error", Boolean(message)); }
+  return validEmail && password.length >= 8 && password === confirmation;
+}
 function showAuthView(view = "login") {
   const forms = { login: "loginForm", signup: "signupForm", forgot: "forgotForm", reset: "resetPasswordForm" };
   Object.entries(forms).forEach(([name, id]) => { if ($(id)) $(id).hidden = name !== view; });
@@ -438,8 +468,7 @@ async function handleSignup(event) {
   const confirmation = $("signupPasswordConfirm").value;
   const button = $("signupSubmit");
   if (button.disabled) return;
-  if (password.length < 8) { setAuthMessage("signupMessage", "Use a password with at least 8 characters."); return; }
-  if (password !== confirmation) { setAuthMessage("signupMessage", "The passwords don't match."); return; }
+  if (!validateSignupForm()) return;
   if (!pulseClient) { setAuthMessage("signupMessage", "The secure sign-up service did not load. Check your connection."); return; }
   button.disabled = true; button.textContent = "Creating account…";
   setAuthMessage("signupMessage", "");
@@ -452,7 +481,9 @@ async function handleSignup(event) {
     if (data.session && data.user) {
       await finishSignIn(data.user);
     } else {
-      setAuthMessage("signupMessage", "Account created. Check your inbox and confirm your email before signing in.", false);
+      $("resendConfirmation")?.removeAttribute("hidden");
+      if ($("resendConfirmation")) $("resendConfirmation").dataset.email = email;
+      setAuthMessage("signupMessage", authText("confirmationSent", "Account created. Check your email to confirm your address."), false);
     }
   } catch (error) {
     setAuthMessage("signupMessage", pulseAuthError(error));
@@ -460,11 +491,29 @@ async function handleSignup(event) {
     button.disabled = false; button.textContent = "Create account";
   }
 }
+async function resendSignupConfirmation() {
+  const button = $("resendConfirmation");
+  const email = button?.dataset.email || $("signupEmail")?.value.trim();
+  if (!button || !email || !pulseClient || button.disabled) return;
+  button.disabled = true;
+  try {
+    const { error } = await pulseClient.auth.resend({ type: "signup", email, options: { emailRedirectTo: authRedirectUrl() } });
+    if (error) throw error;
+    setAuthMessage("signupMessage", authText("confirmationResent", "Confirmation email sent. Check your inbox."), false);
+    let remaining = 60;
+    const tick = () => { remaining -= 1; button.textContent = remaining > 0 ? `${authText("resendWaiting", "Resend available in")} ${remaining}s` : authText("resend", "Resend confirmation email"); if (remaining > 0) setTimeout(tick, 1000); else button.disabled = false; };
+    button.textContent = `${authText("resendWaiting", "Resend available in")} 60s`;
+    setTimeout(tick, 1000);
+  } catch (error) {
+    button.disabled = false;
+    setAuthMessage("signupMessage", pulseAuthError(error));
+  }
+}
 async function handleForgotPassword(event) {
   event.preventDefault();
   const email = $("forgotEmail").value.trim();
   const button = $("forgotSubmit");
-  if (!pulseClient) { setAuthMessage("forgotMessage", "The recovery service did not load. Check your connection."); return; }
+  if (!pulseClient) { setAuthMessage("forgotMessage", authText("connectionError", "Connection problem. Check your internet and try again.")); return; }
   button.disabled = true; button.textContent = "Sending…";
   setAuthMessage("forgotMessage", "");
   try {
@@ -472,7 +521,7 @@ async function handleForgotPassword(event) {
       redirectTo: authRedirectUrl()
     });
     if (error) throw error;
-    setAuthMessage("forgotMessage", "If an account exists for this email, a recovery link will arrive shortly. Open it on this device to choose a new password.", false);
+    setAuthMessage("forgotMessage", authText("recoverySent", "If an account exists for this email, a recovery link will arrive shortly. Open it on this device to choose a new password."), false);
   } catch (error) {
     setAuthMessage("forgotMessage", pulseAuthError(error));
   } finally {
@@ -484,9 +533,9 @@ async function handlePasswordUpdate(event) {
   const password = $("newPassword").value;
   const confirmation = $("newPasswordConfirm").value;
   const button = $("resetPasswordSubmit");
-  if (password.length < 8) { setAuthMessage("resetPasswordMessage", "Use a password with at least 8 characters."); return; }
-  if (password !== confirmation) { setAuthMessage("resetPasswordMessage", "The passwords don't match."); return; }
-  if (!pulseClient) { setAuthMessage("resetPasswordMessage", "The password service did not load. Check your connection."); return; }
+  if (password.length < 8) { setAuthMessage("resetPasswordMessage", authText("weakPassword", "Use a password with at least 8 characters.")); return; }
+  if (password !== confirmation) { setAuthMessage("resetPasswordMessage", authText("passwordMismatch", "The passwords don't match.")); return; }
+  if (!pulseClient) { setAuthMessage("resetPasswordMessage", authText("connectionError", "Connection problem. Check your internet and try again.")); return; }
   button.disabled = true; button.textContent = "Saving…";
   setAuthMessage("resetPasswordMessage", "");
   try {
@@ -503,6 +552,10 @@ async function handlePasswordUpdate(event) {
 }
 $("loginForm")?.addEventListener("submit", handleLogin);
 $("signupForm")?.addEventListener("submit", handleSignup);
+$("resendConfirmation")?.addEventListener("click", resendSignupConfirmation);
+$("signupEmail")?.addEventListener("input", validateSignupForm);
+$("signupPassword")?.addEventListener("input", validateSignupForm);
+$("signupPasswordConfirm")?.addEventListener("input", validateSignupForm);
 $("forgotForm")?.addEventListener("submit", handleForgotPassword);
 $("resetPasswordForm")?.addEventListener("submit", handlePasswordUpdate);
 $("showSignup")?.addEventListener("click", () => showAuthView("signup"));
@@ -615,3 +668,4 @@ $("deleteAccount")?.addEventListener("click", async () => {
   } catch { toast("Could not delete your account. Sign in again and retry."); }
   finally { button.disabled = false; }
 });
+
