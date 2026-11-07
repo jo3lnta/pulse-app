@@ -315,6 +315,7 @@ function pulseAuthError(error) {
   const message = String(error?.message || "").toLowerCase();
   if (code === "over_email_send_rate_limit" || message.includes("rate limit")) return authText("rateLimited", "Too many email requests. Please wait a minute and try again.");
   if (message.includes("email not confirmed")) return authText("emailUnconfirmed", "Confirm your email address before signing in.");
+  if (message.includes("already registered") || message.includes("already exists") || code.includes("already_exists")) return authText("emailAlreadyUsed", "This email is already registered. Try signing in instead.");
   if (message.includes("invalid login credentials")) return authText("invalidCredentials", "We couldn't sign you in. Check your email and password.");
   if (message.includes("password") && message.includes("8")) return authText("weakPassword", "Use a password with at least 8 characters.");
   if (message.includes("network") || message.includes("fetch")) return authText("connectionError", "Connection problem. Check your internet and try again.");
